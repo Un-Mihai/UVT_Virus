@@ -1,16 +1,18 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/page-header";
 import { RefreshWhile } from "@/components/refresh-while";
 import { type StatusState, StatusWord } from "@/components/status-word";
-import { sectionTitle } from "@/components/styles";
+import { sectionTitle, textLink } from "@/components/styles";
 import type { Dictionary } from "@/i18n/dictionaries/en";
 import { currentLocale, getDictionary } from "@/i18n/dictionary";
-import type { Locale } from "@/i18n/locales";
+import { type Locale, withLocale } from "@/i18n/locales";
 import { fill, plural } from "@/i18n/template";
 import type { components } from "@/lib/api/schema";
 import { api } from "@/lib/api/server";
 import { currentUser } from "@/lib/auth/current-user";
+import { applicantOf, fileState } from "@/lib/file-state";
 import { formatDateTime, formatPercent } from "@/lib/format";
 import { hasRole } from "@/lib/roles";
 
@@ -18,9 +20,12 @@ import { ApplicationDetails } from "./application-details";
 import { DocumentsSection } from "./documents-section";
 import { ProjectActions } from "./project-actions";
 import { ReviewPane } from "./review/review-pane";
+import { VerdictForm } from "./verdict-form";
 
 type Run = components["schemas"]["RunOut"];
 type Document = components["schemas"]["DocumentOut"];
+type Finding = components["schemas"]["FindingOut"];
+type Project = components["schemas"]["ProjectOut"];
 
 async function load(projectId: number) {
   const path = { params: { path: { project_id: projectId } } };
@@ -53,6 +58,18 @@ function isReading(documents: Document[]) {
       !document.reading_stalled &&
       document.pages.some((page) => page.ocr_status === "pending"),
   );
+}
+
+/** Per document: how many findings the latest finished check has, and how many still lack a decision. */
+function countFindings(findings: Finding[]) {
+  const counts: Record<number, { total: number; open: number }> = {};
+  for (const { document_id, decision } of findings) {
+    if (document_id === null) continue;
+    const count = (counts[document_id] ??= { total: 0, open: 0 });
+    count.total += 1;
+    if (decision === null) count.open += 1;
+  }
+  return counts;
 }
 
 /** One project: its check, its documents with the findings beside them, and its form. */
@@ -89,16 +106,40 @@ export async function Workspace({
   const typeName =
     types.find((type) => type.id === project.project_type_id)?.name ?? "";
   const completed = run?.status === "completed" ? report : null;
+  const file = fileState(project);
+  const applicant = applicantOf(project, dictionary.common.unnamedApplicant);
+  const status = dictionary.fileState[file.key];
 
   return (
     <>
-      <RefreshWhile active={running || reading} />
+      {/* Fast while work runs; slowly while the applicant waits for a reviewer's move or verdict. */}
+      <RefreshWhile
+        active={
+          running ||
+          reading ||
+          (isOwner && (file.key === "waiting" || file.key === "inReview"))
+        }
+        every={running || reading ? 2500 : 15000}
+      />
+      {isReviewer && (
+        <Link
+          href={withLocale(locale, "/")}
+          className={`${textLink} mb-6 inline-block`}
+        >
+          ← {text.backToApplicants}
+        </Link>
+      )}
       <PageHeader
         title={project.title}
-        lead={fill(text.typeAndStatus, {
-          type: typeName,
-          status: dictionary.projectStatus[project.status],
-        })}
+        lead={
+          isReviewer
+            ? fill(text.applicantTypeAndStatus, {
+                applicant: applicant.name,
+                type: typeName,
+                status,
+              })
+            : fill(text.typeAndStatus, { type: typeName, status })
+        }
         actions={
           <ProjectActions
             projectId={project.id}
@@ -114,16 +155,28 @@ export async function Workspace({
           />
         }
       />
-      <CheckState
-        run={run}
-        reading={reading}
-        scope={isReviewer ? text.reviewerCheck : text.clientCheck}
-        text={text}
-        locale={locale}
-      />
+      <div className="mt-8 grid gap-3">
+        {isOwner && (
+          <FileState
+            file={file}
+            project={project}
+            dictionary={dictionary}
+            locale={locale}
+          />
+        )}
+        <CheckState
+          run={run}
+          reading={reading}
+          scope={isReviewer ? text.reviewerCheck : text.clientCheck}
+          text={text}
+          locale={locale}
+        />
+      </div>
       <DocumentsSection
         projectId={project.id}
         documents={project.documents}
+        checks={completed ? countFindings(completed.findings) : null}
+        checking={running}
         editable={isOwner && draft}
         locale={locale}
         dictionary={dictionary}
@@ -174,6 +227,27 @@ export async function Workspace({
           />
         )}
       </section>
+      {isReviewer && !draft && (
+        <section className="panel mt-12" aria-labelledby="verdict-title">
+          <h2 id="verdict-title" className={sectionTitle}>
+            {dictionary.verdict.title}
+          </h2>
+          <p className="mb-4 max-w-prose text-ink-2">
+            {project.verdict === "approved" && project.verdict_at
+              ? fill(dictionary.verdict.approvedOn, {
+                  date: formatDateTime(project.verdict_at, locale),
+                })
+              : dictionary.verdict.lead}
+          </p>
+          <VerdictForm
+            projectId={project.id}
+            locale={locale}
+            initialNote={project.verdict_note ?? ""}
+            text={dictionary.verdict}
+            errors={dictionary.errors}
+          />
+        </section>
+      )}
       <ApplicationDetails form={project.form} dictionary={dictionary} />
     </>
   );
@@ -219,12 +293,51 @@ function CheckState({
   return (
     <div
       aria-live="polite"
-      className="mt-8 flex flex-wrap items-baseline gap-x-3 gap-y-1"
+      className="flex flex-wrap items-baseline gap-x-3 gap-y-1"
     >
       <StatusWord state={state}>{scope}</StatusWord>
       <p className="max-w-prose text-ink-2">{message}</p>
       {run?.status === "failed" && run.error && (
         <code className="text-sm text-ink-3">{run.error}</code>
+      )}
+    </div>
+  );
+}
+
+/** Where the applicant's file stands, with what happens next. */
+function FileState({
+  file,
+  project,
+  dictionary,
+  locale,
+}: {
+  file: ReturnType<typeof fileState>;
+  project: Pick<Project, "submitted_at" | "verdict_at" | "verdict_note">;
+  dictionary: Dictionary;
+  locale: Locale;
+}) {
+  const text = dictionary.fileState;
+  const when = (date: string | null) =>
+    date ? formatDateTime(date, locale) : "";
+  const note = {
+    draft: text.draftNote,
+    waiting: fill(text.waitingNote, { date: when(project.submitted_at) }),
+    inReview: text.inReviewNote,
+    approved: fill(text.approvedNote, { date: when(project.verdict_at) }),
+    changesRequested: text.changesRequestedNote,
+  }[file.key];
+  return (
+    <div
+      aria-live="polite"
+      className="flex flex-wrap items-baseline gap-x-3 gap-y-1"
+    >
+      <StatusWord state={file.state}>{text[file.key]}</StatusWord>
+      <p className="max-w-prose text-ink-2">{note}</p>
+      {project.verdict_note && (
+        <p className="w-full max-w-prose text-ink">
+          <span className="font-semibold">{text.reviewerNote}</span>{" "}
+          {project.verdict_note}
+        </p>
       )}
     </div>
   );

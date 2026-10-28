@@ -458,6 +458,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/projects/{project_id}/verdict": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Record Verdict
+     * @description Approves a submitted project, or sends it back to its owner as a draft to change.
+     */
+    put: operations["record_verdict_api_projects__project_id__verdict_put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/projects/{project_id}/verifications": {
     parameters: {
       query?: never;
@@ -860,6 +880,10 @@ export interface components {
       project_type_id: number;
       /** Owner Id */
       owner_id: string;
+      /** Owner Name */
+      owner_name: string | null;
+      /** Applicant Name */
+      applicant_name?: string | null;
       /** Title */
       title: string;
       status: components["schemas"]["ProjectStatus"];
@@ -870,6 +894,16 @@ export interface components {
       created_at: string;
       /** Submitted At */
       submitted_at: string | null;
+      /**
+       * In Review
+       * @default false
+       */
+      in_review: boolean;
+      verdict: components["schemas"]["Verdict"] | null;
+      /** Verdict Note */
+      verdict_note: string | null;
+      /** Verdict At */
+      verdict_at: string | null;
       /** Form */
       form: {
         [key: string]: unknown;
@@ -890,6 +924,10 @@ export interface components {
       project_type_id: number;
       /** Owner Id */
       owner_id: string;
+      /** Owner Name */
+      owner_name: string | null;
+      /** Applicant Name */
+      applicant_name?: string | null;
       /** Title */
       title: string;
       status: components["schemas"]["ProjectStatus"];
@@ -900,6 +938,16 @@ export interface components {
       created_at: string;
       /** Submitted At */
       submitted_at: string | null;
+      /**
+       * In Review
+       * @default false
+       */
+      in_review: boolean;
+      verdict: components["schemas"]["Verdict"] | null;
+      /** Verdict Note */
+      verdict_note: string | null;
+      /** Verdict At */
+      verdict_at: string | null;
     };
     /** ProjectTypeIn */
     ProjectTypeIn: {
@@ -1113,6 +1161,18 @@ export interface components {
       input?: unknown;
       /** Context */
       ctx?: Record<string, never>;
+    };
+    /**
+     * Verdict
+     * @description A reviewer's decision on a whole submitted project.
+     * @enum {string}
+     */
+    Verdict: "approved" | "changes_requested";
+    /** VerdictIn */
+    VerdictIn: {
+      verdict: components["schemas"]["Verdict"];
+      /** Note */
+      note?: string | null;
     };
     /** VerificationReport */
     VerificationReport: {
@@ -3276,6 +3336,102 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["ProjectOut"];
         };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Content Too Large */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Unsupported Media Type */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  record_verdict_api_projects__project_id__verdict_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VerdictIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Bad Request */
       400: {

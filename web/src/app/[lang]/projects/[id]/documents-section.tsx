@@ -45,15 +45,36 @@ function readingState(
   };
 }
 
+/** What the latest finished check found in a document; null counts mean no check has finished. */
+function checkState(
+  counts: { total: number; open: number } | undefined,
+  checked: boolean,
+  checking: boolean,
+  text: Dictionary["documents"],
+  locale: Locale,
+): { state: StatusState; label: string } {
+  if (checking) return { state: "warn", label: text.checking };
+  if (!checked) return { state: "neutral", label: text.notChecked };
+  const { total, open } = counts ?? { total: 0, open: 0 };
+  if (total === 0) return { state: "ok", label: text.noFindings };
+  if (open === 0) return { state: "ok", label: text.allDecided };
+  return { state: "warn", label: plural(locale, open, text.openFindings) };
+}
+
 export function DocumentsSection({
   projectId,
   documents,
+  checks,
+  checking,
   editable,
   locale,
   dictionary,
 }: {
   projectId: number;
   documents: Document[];
+  /** Findings per document id from the latest finished check; null before one has finished. */
+  checks: Record<number, { total: number; open: number }> | null;
+  checking: boolean;
   editable: boolean;
   locale: Locale;
   dictionary: Dictionary;
@@ -72,6 +93,13 @@ export function DocumentsSection({
         <ul className="divide-y divide-line border-y border-line">
           {documents.map((document) => {
             const reading = readingState(document, text, locale);
+            const check = checkState(
+              checks?.[document.id],
+              checks !== null,
+              checking,
+              text,
+              locale,
+            );
             const type = document.document_type as
               keyof Dictionary["documentTypes"] | null;
             return (
@@ -100,6 +128,7 @@ export function DocumentsSection({
                         {reading.label}
                       </StatusWord>
                     )}
+                    <StatusWord state={check.state}>{check.label}</StatusWord>
                   </p>
                 </div>
                 <DocumentActions

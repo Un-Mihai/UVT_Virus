@@ -20,6 +20,13 @@ class ProjectStatus(StrEnum):
     SUBMITTED = "submitted"
 
 
+class Verdict(StrEnum):
+    """A reviewer's decision on a whole submitted project."""
+
+    APPROVED = "approved"
+    CHANGES_REQUESTED = "changes_requested"  # the project goes back to its owner as a draft
+
+
 class RunStatus(StrEnum):
     PENDING = "pending"
     RUNNING = "running"

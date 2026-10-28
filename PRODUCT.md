@@ -85,6 +85,16 @@ page, and the checks that matter (sums, dates, identifiers) are computed in code
   when. Clients decide on client-scope findings, reviewers on reviewer-scope findings.
 - Decided: the document viewer renders the original PDF; the backend returns highlight boxes per
   finding (`/highlights`) and an annotated PDF (`/annotated`), both keyed by `finding-{id}`.
+- Decided: a reviewer's home lists every applicant who submitted (organisation from the form,
+  account name, project, submitted date, state) and picks one by opening their file. A client's
+  file state is derived: draft, waiting for a reviewer, or in review (a reviewer has started the
+  Reviewer Verification Process, counted from the latest submission); each document also shows its
+  own check state.
+- Decided: a reviewer records a verdict on a submitted file (`PUT /api/projects/{id}/verdict`).
+  Approved keeps it submitted and locked. Changes requested needs a note and sends the file back
+  to its owner as a draft, so it leaves the reviewer's list; submitting again clears the verdict.
+  The client sees the verdict and the note on their file. Reviewers never see a returned file
+  until it is resubmitted.
 - Open decision: which document types and which checks the demo covers. The deterministic checks
   available to rule sets are listed at `GET /api/checks`.
 - Open decision: whether reviewers can correct an extracted value and re-run the checks.

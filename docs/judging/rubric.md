@@ -108,14 +108,25 @@ instructions the organiser publishes on the agenda page: add them here when they
 | Wed 28 Oct, 14:00 and 18:30 | Mentor checkpoints |
 | Wed 28 Oct, 20:00 | Pitch preparation, then building overnight |
 | Thu 29 Oct, 09:00 | Morning checkpoint |
-| Thu 29 Oct, 10:30 | Project submission and video pitch upload (deadline) |
+| Thu 29 Oct, 11:00 | Project submission and video pitch upload (deadline) |
 | Thu 29 Oct, 15:30 | Jury checkpoint: the jury verifies the solution and asks follow-up questions |
-| Thu 29 Oct, 17:10 | Finals on the main stage for the strongest teams, then the jury's final vote |
-| Thu 29 Oct, 18:00 | Awards |
+| Thu 29 Oct, 17:00 | Finals on the main stage for the strongest teams, then the jury's final vote |
+| Thu 29 Oct, 17:50 | Awards and closing |
 
 ## Challenge-specific criteria
 
 Fill in at kick-off from the challenge brief: what the challenge partner asks for, any criteria
 or weights of its own, and where the text came from (brief, slide, mentor).
 
-- Not available yet.
+Source: "Brief Raiffeisen Bank.pdf" (participant guide, in Romanian), received 28 Oct. No weights.
+
+- The challenge is open: "AI agents in banking services". Any financial-banking problem, with a
+  product driven by agents the team builds. No predefined use cases; known templates are not what
+  they look for. Main emphasis: the strength, originality and ingenuity of the idea, in a working
+  agent architecture.
+- The jury looks first at: concept and usefulness (new, surprising, a real problem or an
+  opportunity traditional banks ignore); depth of execution (how elaborate the agent flow is); a
+  working prototype shown live, end to end, in real time; technical architecture and feasibility
+  (clean code, easy to connect to external services).
+- Deliverables: source code, a live end-to-end demo of the agent, and a short concept
+  presentation (the problem, why the solution is unique, the architecture behind it).

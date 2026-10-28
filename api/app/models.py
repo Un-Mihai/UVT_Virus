@@ -25,6 +25,7 @@ from app.vocabulary import (
     RunStatus,
     Scope,
     Severity,
+    Verdict,
     check_in,
 )
 
@@ -153,17 +154,27 @@ class Project(Base):
     """A client's funding application: the form they filled in and the documents they uploaded."""
 
     __tablename__ = "projects"
-    __table_args__ = (CheckConstraint(check_in("status", ProjectStatus), name="status"),)
+    __table_args__ = (
+        CheckConstraint(check_in("status", ProjectStatus), name="status"),
+        CheckConstraint(f"verdict IS NULL OR {check_in('verdict', Verdict)}", name="verdict"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     project_type_id: Mapped[int] = mapped_column(ForeignKey("project_types.id"), index=True)
     owner_id: Mapped[str] = mapped_column(index=True)  # Keycloak user id (sub)
+    # The owner's name when they last saved; None on projects from before it was kept.
+    owner_name: Mapped[str | None]
     title: Mapped[str]
     # The application form; personal identifiers are stored only hashed and masked.
     form: Mapped[dict[str, Any]] = mapped_column(default=dict)
     status: Mapped[str] = mapped_column(default=ProjectStatus.DRAFT, index=True)
     created_at: Mapped[datetime] = created_at_column()
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The reviewer's decision on the whole project; cleared when the owner submits again.
+    verdict: Mapped[str | None]
+    verdict_note: Mapped[str | None]
+    verdict_by: Mapped[str | None]
+    verdict_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     documents: Mapped[list["ProjectDocument"]] = relationship(
         order_by="ProjectDocument.id", cascade="all, delete-orphan"

@@ -8,6 +8,7 @@ import { type Locale, withLocale } from "@/i18n/locales";
 import type { components } from "@/lib/api/schema";
 import { api } from "@/lib/api/server";
 import { currentUser } from "@/lib/auth/current-user";
+import { applicantOf, fileState } from "@/lib/file-state";
 import { formatDateTime } from "@/lib/format";
 import { hasRole } from "@/lib/roles";
 
@@ -128,11 +129,7 @@ function ClientApplications({
                     {typeNames.get(project.project_type_id)}
                   </td>
                   <td className="py-2.5 pr-4">
-                    <StatusWord
-                      state={project.status === "submitted" ? "ok" : "neutral"}
-                    >
-                      {dictionary.projectStatus[project.status]}
-                    </StatusWord>
+                    <FileStatus project={project} dictionary={dictionary} />
                   </td>
                   <td className="py-2.5 whitespace-nowrap text-ink-2">
                     {formatDateTime(project.created_at, locale)}
@@ -159,44 +156,77 @@ function SubmittedProjects({
       <h2 id="submitted-title" className={sectionTitle}>
         {text.title}
       </h2>
+      <p className="mb-4 max-w-prose text-ink-2">{text.lead}</p>
       {projects.length === 0 ? (
         <p className="max-w-prose text-ink-2">{text.empty}</p>
       ) : (
         <div className="data-table overflow-x-auto">
-          <table className="w-full min-w-[36rem] text-left text-sm">
+          <table className="w-full min-w-[44rem] text-left text-sm">
             <thead className="border-b border-line-strong text-ink-3">
               <tr>
+                <th className="py-2 pr-4 font-medium">
+                  {text.applicant_column}
+                </th>
                 <th className="py-2 pr-4 font-medium">{text.title_column}</th>
                 <th className="py-2 pr-4 font-medium">{text.type_column}</th>
-                <th className="py-2 font-medium">{text.submitted_column}</th>
+                <th className="py-2 pr-4 font-medium">
+                  {text.submitted_column}
+                </th>
+                <th className="py-2 font-medium">{text.status_column}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line tabular-nums">
-              {projects.map((project) => (
-                <tr key={project.id}>
-                  <td className="py-2.5 pr-4">
-                    <Link
-                      href={withLocale(locale, `/projects/${project.id}`)}
-                      className={textLink}
-                    >
-                      {project.title}
-                    </Link>
-                  </td>
-                  <td className="py-2.5 pr-4 text-ink-2">
-                    {typeNames.get(project.project_type_id)}
-                  </td>
-                  <td className="py-2.5 whitespace-nowrap text-ink-2">
-                    {project.submitted_at &&
-                      formatDateTime(project.submitted_at, locale)}
-                  </td>
-                </tr>
-              ))}
+              {projects.map((project) => {
+                const applicant = applicantOf(
+                  project,
+                  dictionary.common.unnamedApplicant,
+                );
+                return (
+                  <tr key={project.id}>
+                    <td className="py-2.5 pr-4">
+                      <Link
+                        href={withLocale(locale, `/projects/${project.id}`)}
+                        className={textLink}
+                      >
+                        {applicant.name}
+                      </Link>
+                      {applicant.account && (
+                        <span className="block text-ink-3">
+                          {applicant.account}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 pr-4">{project.title}</td>
+                    <td className="py-2.5 pr-4 text-ink-2">
+                      {typeNames.get(project.project_type_id)}
+                    </td>
+                    <td className="py-2.5 pr-4 whitespace-nowrap text-ink-2">
+                      {project.submitted_at &&
+                        formatDateTime(project.submitted_at, locale)}
+                    </td>
+                    <td className="py-2.5">
+                      <FileStatus project={project} dictionary={dictionary} />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
     </section>
   );
+}
+
+function FileStatus({
+  project,
+  dictionary,
+}: {
+  project: ProjectSummary;
+  dictionary: Dictionary;
+}) {
+  const { key, state } = fileState(project);
+  return <StatusWord state={state}>{dictionary.fileState[key]}</StatusWord>;
 }
 
 function ProjectTypes({

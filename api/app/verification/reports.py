@@ -5,10 +5,10 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import DocumentFinding, VerificationRun
+from app.models import DocumentFinding, Project, VerificationRun
 from app.pdf import HighlightMark
 from app.verification.scope import Visibility
-from app.vocabulary import Severity
+from app.vocabulary import Scope, Severity
 
 HIGHLIGHT_COLORS = {Severity.BAD: "f28b82", Severity.WARN: "fdd663"}
 
@@ -27,6 +27,22 @@ async def latest_run(
         .order_by(VerificationRun.id.desc())
         .limit(1)
     )
+
+
+async def reviewed_project_ids(session: AsyncSession, project_ids: Sequence[int]) -> set[int]:
+    """The projects a reviewer has started checking since they were last submitted; the client
+    sees only that fact."""
+    rows = await session.scalars(
+        select(VerificationRun.project_id)
+        .join(Project, Project.id == VerificationRun.project_id)
+        .where(
+            VerificationRun.scope == Scope.REVIEWER,
+            VerificationRun.project_id.in_(project_ids),
+            VerificationRun.created_at >= Project.submitted_at,
+        )
+        .distinct()
+    )
+    return set(rows)
 
 
 async def visible_findings(

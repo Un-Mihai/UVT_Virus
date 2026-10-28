@@ -57,7 +57,7 @@ async def approve(file_id: int, admin: Admin) -> None:
 | Role | May |
 |---|---|
 | `client` | Create projects, fill in the form, upload documents, submit; run the Client Verification Process and see client-scope findings at or above `CLIENT_CONFIDENCE_THRESHOLD` |
-| `reviewer` | Read submitted projects; run the Reviewer Verification Process and see reviewer-scope findings at or above `REVIEWER_CONFIDENCE_THRESHOLD`; confirm or dismiss them |
+| `reviewer` | Read submitted projects; run the Reviewer Verification Process and see reviewer-scope findings at or above `REVIEWER_CONFIDENCE_THRESHOLD`; confirm or dismiss them; approve a project or send it back with a note |
 | `admin` | Manage project types, regulation documents and rule sets of both scopes |
 
 A router whose routes all need a user can say so once:

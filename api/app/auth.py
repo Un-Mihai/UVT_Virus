@@ -27,6 +27,10 @@ class User(BaseModel):
     def has_role(self, role: Role) -> bool:
         return role in self.roles
 
+    @property
+    def display_name(self) -> str:
+        return self.name or self.username
+
 
 class SigningKeys(Protocol):
     def get_signing_key_from_jwt(self, token: str) -> jwt.PyJWK: ...

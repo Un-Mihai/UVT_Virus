@@ -35,6 +35,7 @@ export const en = {
       other: "{count} pages",
     },
     page: "Page {page}",
+    unnamedApplicant: "Unnamed applicant",
   },
   errors: {
     400: "The request was not accepted. Check the values and try again.",
@@ -52,9 +53,34 @@ export const en = {
       "The request did not reach the server. Check your connection and try again.",
     other: "Something went wrong (status {status}). Try again.",
   },
-  projectStatus: {
+  fileState: {
     draft: "Draft",
-    submitted: "Submitted",
+    waiting: "Waiting for a reviewer",
+    inReview: "In review",
+    draftNote:
+      "Not submitted yet. Upload the documents, run the check and submit when it looks right.",
+    waitingNote:
+      "Submitted {date}. No reviewer has opened it yet; this page updates by itself.",
+    inReviewNote:
+      "A reviewer is checking your documents. There is nothing to do on your side.",
+    approved: "Approved",
+    approvedNote: "A reviewer approved your file {date}.",
+    changesRequested: "Changes requested",
+    changesRequestedNote:
+      "A reviewer asked for changes. Edit the application, then submit it again.",
+    reviewerNote: "Note from the reviewer:",
+  },
+  verdict: {
+    title: "Verdict",
+    lead: "Record your decision on this file. The applicant sees it with your note.",
+    approvedOn: "Approved {date}.",
+    approve: "Approve",
+    requestChanges: "Request changes",
+    saving: "Saving…",
+    noteLabel: "Note to the applicant",
+    noteHint:
+      "Required to request changes: say what must be fixed. The file then returns to the applicant as a draft and leaves your list until they submit it again.",
+    noteRequired: "Say what the applicant must change.",
   },
   severity: {
     bad: "Error",
@@ -121,6 +147,8 @@ export const en = {
   workspace: {
     loading: "Loading the project…",
     typeAndStatus: "{type} · {status}",
+    applicantTypeAndStatus: "{applicant} · {type} · {status}",
+    backToApplicants: "All applicants",
     runCheck: "Run the check",
     runningCheck: "Checking…",
     runConflict:
@@ -172,6 +200,15 @@ export const en = {
       one: "{count} page could not be read",
       few: "{count} pages could not be read",
       other: "{count} pages could not be read",
+    },
+    checking: "Checking…",
+    notChecked: "Not checked yet",
+    noFindings: "No findings",
+    allDecided: "All findings decided",
+    openFindings: {
+      one: "{count} finding to review",
+      few: "{count} findings to review",
+      other: "{count} findings to review",
     },
     stalled: "Reading the scans stopped.",
     readAgain: "Read again",
@@ -296,12 +333,15 @@ export const en = {
       created_column: "Started",
     },
     reviewer: {
-      title: "Submitted projects",
+      title: "Applicants",
+      lead: "Everyone who has submitted an application. Select an applicant to review their documents.",
       empty:
-        "No project has been submitted yet. Projects appear here as soon as an applicant submits one.",
-      title_column: "Title",
+        "No project has been submitted yet. Applicants appear here as soon as one submits a project.",
+      applicant_column: "Applicant",
+      title_column: "Application",
       type_column: "Project type",
       submitted_column: "Submitted",
+      status_column: "Status",
     },
     admin: {
       title: "Project types",

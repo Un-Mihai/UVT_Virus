@@ -35,6 +35,7 @@ export const ro: Dictionary = {
       other: "{count} de pagini",
     },
     page: "Pagina {page}",
+    unnamedApplicant: "Solicitant fără nume",
   },
   errors: {
     400: "Cererea nu a fost acceptată. Verificați valorile și încercați din nou.",
@@ -52,9 +53,34 @@ export const ro: Dictionary = {
       "Cererea nu a ajuns la server. Verificați conexiunea și încercați din nou.",
     other: "A apărut o eroare (cod {status}). Încercați din nou.",
   },
-  projectStatus: {
+  fileState: {
     draft: "Ciornă",
-    submitted: "Depus",
+    waiting: "Așteaptă un evaluator",
+    inReview: "În evaluare",
+    draftNote:
+      "Încă nedepusă. Încărcați documentele, rulați verificarea și depuneți când totul arată bine.",
+    waitingNote:
+      "Depusă pe {date}. Niciun evaluator nu a deschis-o încă; pagina se actualizează singură.",
+    inReviewNote:
+      "Un evaluator vă verifică documentele. Nu aveți nimic de făcut.",
+    approved: "Aprobată",
+    approvedNote: "Un evaluator v-a aprobat dosarul pe {date}.",
+    changesRequested: "Necesită modificări",
+    changesRequestedNote:
+      "Un evaluator a cerut modificări. Editați cererea, apoi depuneți-o din nou.",
+    reviewerNote: "Nota evaluatorului:",
+  },
+  verdict: {
+    title: "Decizie",
+    lead: "Înregistrați decizia dumneavoastră asupra acestui dosar. Solicitantul o vede împreună cu nota dumneavoastră.",
+    approvedOn: "Aprobată pe {date}.",
+    approve: "Aprobați",
+    requestChanges: "Cereți modificări",
+    saving: "Se salvează…",
+    noteLabel: "Notă pentru solicitant",
+    noteHint:
+      "Obligatorie pentru a cere modificări: spuneți ce trebuie corectat. Dosarul revine apoi solicitantului ca ciornă și dispare din lista dumneavoastră până îl depune din nou.",
+    noteRequired: "Spuneți ce trebuie să modifice solicitantul.",
   },
   severity: {
     bad: "Eroare",
@@ -120,6 +146,8 @@ export const ro: Dictionary = {
   workspace: {
     loading: "Se încarcă proiectul…",
     typeAndStatus: "{type} · {status}",
+    applicantTypeAndStatus: "{applicant} · {type} · {status}",
+    backToApplicants: "Toți solicitanții",
     runCheck: "Rulați verificarea",
     runningCheck: "Se verifică…",
     runConflict:
@@ -171,6 +199,15 @@ export const ro: Dictionary = {
       one: "{count} pagină nu a putut fi citită",
       few: "{count} pagini nu au putut fi citite",
       other: "{count} de pagini nu au putut fi citite",
+    },
+    checking: "Se verifică…",
+    notChecked: "Încă neverificat",
+    noFindings: "Fără constatări",
+    allDecided: "Toate constatările au o decizie",
+    openFindings: {
+      one: "{count} constatare de verificat",
+      few: "{count} constatări de verificat",
+      other: "{count} de constatări de verificat",
     },
     stalled: "Citirea paginilor scanate s-a oprit.",
     readAgain: "Citiți din nou",
@@ -295,12 +332,15 @@ export const ro: Dictionary = {
       created_column: "Începută",
     },
     reviewer: {
-      title: "Proiecte depuse",
+      title: "Solicitanți",
+      lead: "Toți cei care au depus o cerere. Alegeți un solicitant pentru a-i evalua documentele.",
       empty:
-        "Niciun proiect nu a fost depus încă. Proiectele apar aici imediat ce un solicitant depune unul.",
-      title_column: "Titlu",
+        "Niciun proiect nu a fost depus încă. Solicitanții apar aici imediat ce unul depune un proiect.",
+      applicant_column: "Solicitant",
+      title_column: "Cerere",
       type_column: "Tip de proiect",
-      submitted_column: "Depus",
+      submitted_column: "Depusă",
+      status_column: "Stare",
     },
     admin: {
       title: "Tipuri de proiect",

@@ -20,7 +20,8 @@ from app.projects.access import editable_project, visible_project
 from app.projects.form import ApplicationForm, stored_form
 from app.routes.problems import PROBLEMS
 from app.routes.project_types import existing_project_type
-from app.vocabulary import OcrStatus, ProjectStatus
+from app.verification.reports import reviewed_project_ids
+from app.vocabulary import OcrStatus, ProjectStatus, Verdict
 
 router = APIRouter(
     prefix="/api/projects",
@@ -29,6 +30,7 @@ router = APIRouter(
     responses=PROBLEMS,
 )
 Client = Annotated[User, Depends(require_roles(Role.CLIENT))]
+Reviewer = Annotated[User, Depends(require_roles(Role.REVIEWER))]
 
 
 class ProjectIn(BaseModel):
@@ -40,6 +42,11 @@ class ProjectIn(BaseModel):
 class ProjectUpdate(BaseModel):
     title: str | None = None
     form: ApplicationForm | None = None
+
+
+class VerdictIn(BaseModel):
+    verdict: Verdict
+    note: str | None = None  # required when asking for changes: what the owner must fix
 
 
 class PageOut(BaseModel):
@@ -70,10 +77,17 @@ class ProjectSummary(BaseModel):
     id: int
     project_type_id: int
     owner_id: str
+    owner_name: str | None  # the account that applied
+    applicant_name: str | None = None  # the organisation, from the form
     title: str
     status: ProjectStatus
     created_at: datetime
     submitted_at: datetime | None
+    # A reviewer has started checking this submitted project.
+    in_review: bool = False
+    verdict: Verdict | None
+    verdict_note: str | None
+    verdict_at: datetime | None
 
 
 class ProjectOut(ProjectSummary):
@@ -86,7 +100,12 @@ async def create_project(
     body: ProjectIn, session: SessionDep, hasher: HasherDep, client: Client
 ) -> ProjectOut:
     await existing_project_type(session, body.project_type_id)
-    project = Project(project_type_id=body.project_type_id, owner_id=client.id, title=body.title)
+    project = Project(
+        project_type_id=body.project_type_id,
+        owner_id=client.id,
+        owner_name=client.display_name,
+        title=body.title,
+    )
     session.add(project)
     await session.flush()
     await _save_form(session, project, body.form, hasher)
@@ -102,7 +121,9 @@ async def list_projects(session: SessionDep, user: CurrentUser) -> list[ProjectS
         query = query.where(Project.status == ProjectStatus.SUBMITTED)
     else:
         query = query.where(Project.owner_id == user.id)
-    return [ProjectSummary.model_validate(row) for row in await session.scalars(query)]
+    projects = (await session.scalars(query)).all()
+    reviewed = await reviewed_project_ids(session, [project.id for project in projects])
+    return [project_summary(project, project.id in reviewed) for project in projects]
 
 
 @router.get("/{project_id}")
@@ -116,6 +137,7 @@ async def update_project(
     project_id: int, body: ProjectUpdate, session: SessionDep, hasher: HasherDep, client: Client
 ) -> ProjectOut:
     project = await editable_project(session, client, project_id)
+    project.owner_name = client.display_name
     if body.title is not None:
         project.title = body.title
     if body.form is not None:
@@ -235,8 +257,27 @@ async def submit_project(project_id: int, session: SessionDep, client: Client) -
         )
     project.status = ProjectStatus.SUBMITTED
     project.submitted_at = datetime.now(UTC)
+    project.verdict = project.verdict_note = project.verdict_by = project.verdict_at = None
     await session.commit()
     return await _project_out(session, project_id)
+
+
+@router.put("/{project_id}/verdict", status_code=status.HTTP_204_NO_CONTENT)
+async def record_verdict(
+    project_id: int, body: VerdictIn, session: SessionDep, reviewer: Reviewer
+) -> None:
+    """Approves a submitted project, or sends it back to its owner as a draft to change."""
+    project = await visible_project(session, reviewer, project_id)
+    note = (body.note or "").strip() or None
+    if body.verdict == Verdict.CHANGES_REQUESTED:
+        if note is None:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, "Say what the applicant must change."
+            )
+        project.status = ProjectStatus.DRAFT
+    project.verdict, project.verdict_note = body.verdict, note
+    project.verdict_by, project.verdict_at = reviewer.id, datetime.now(UTC)
+    await session.commit()
 
 
 async def project_document(
@@ -306,6 +347,12 @@ async def _save_form(
     session.add_all(identifiers)
 
 
+def project_summary(project: Project, in_review: bool) -> ProjectSummary:
+    return ProjectSummary.model_validate(project).model_copy(
+        update={"in_review": in_review, "applicant_name": project.form.get("applicant_name")}
+    )
+
+
 async def _project_out(session: AsyncSession, project_id: int) -> ProjectOut:
     project = await session.get_one(
         Project,
@@ -313,8 +360,9 @@ async def _project_out(session: AsyncSession, project_id: int) -> ProjectOut:
         options=[selectinload(Project.documents).selectinload(ProjectDocument.pages)],
         populate_existing=True,
     )
+    reviewed = await reviewed_project_ids(session, [project_id])
     return ProjectOut(
-        **ProjectSummary.model_validate(project).model_dump(),
+        **project_summary(project, project_id in reviewed).model_dump(),
         form=project.form,
         documents=[document_out(document) for document in project.documents],
     )

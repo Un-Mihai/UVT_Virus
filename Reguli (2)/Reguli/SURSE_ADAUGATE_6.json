@@ -1,0 +1,54 @@
+[
+  {
+    "file": "_arhiva_abrogate/Acord_consultare_ANAF_Raiffeisen_2015.pdf",
+    "url": "https://www.raiffeisen.ro/content/dam/rbi/retail/eu/ro/documents/pf/20150514-Acord-Consultare-Agentia-Nationala-Administrare-Fiscala.pdf.coredownload.inline.pdf",
+    "retrieved_date": "2026-10-28",
+    "sha256": "b2ae6fb800981b288253214ea5541a62f8b4d6696c342702338779505e4d103c",
+    "type": "original_pdf",
+    "status": "istoric, neindexat"
+  },
+  {
+    "file": "Adeverinta_salariu_vechime_Raiffeisen.pdf",
+    "url": "https://www.raiffeisen.ro/content/dam/rbi/retail/eu/ro/documents/pf/20220810-Adeverinta-de-salariu-si-vechime-in-munca.pdf.coredownload.inline.pdf",
+    "retrieved_date": "2026-10-28",
+    "sha256": "aab3db074aa9dd34cab58b8d2616d18312e9b4e0b5354b6dcabfe13e62aece76",
+    "type": "original_pdf"
+  },
+  {
+    "file": "Legea_214_2024_semnatura_electronica.pdf",
+    "url": "https://legislatie.just.ro/Public/FormaPrintabila/00000G0V5PYGNWI7GOY3OLI0FBKDPB7Q",
+    "retrieved_date": "2026-10-28",
+    "sha256": "55819633c8cf74461cec4b63b75f1a14f2f482517276171521fa61765ab1b918",
+    "type": "official_html_converted_to_pdf",
+    "html": "_sursa_html/Legea_214_2024_semnatura_electronica.html"
+  },
+  {
+    "file": "OPANAF_146_2022_protocol_inclusiv_Anexa1_acord_ANAF.pdf",
+    "url": "DE COMPLETAT: linkul exact de pe static.anaf.ro de unde a fost descărcat",
+    "retrieved_date": "2026-10-28",
+    "sha256": "4e7a6cf9ff0fca877ae65060f8c6f79d077a1e25e861fb1203e12a00f4acd32c",
+    "type": "original_pdf"
+  },
+  {
+    "file": "_text_integral_neindexat/Codul_fiscal_Legea_227_2015.pdf",
+    "url": "DE COMPLETAT: pagina exactă de pe legislatie.just.ro (probabil https://legislatie.just.ro/Public/DetaliiDocument/171282 – de confirmat)",
+    "retrieved_date": "2026-10-28",
+    "consolidated_through": "2026-10-25",
+    "sha256": "68a74876330ccf7a704603cd5b9777ddd5648b115fc19ab9eaffe7aa5086d32b",
+    "type": "official_html_printed_to_pdf",
+    "used_articles": [
+      "art. 147 alin. (1)"
+    ],
+    "status": "text integral, neindexat"
+  },
+  {
+    "file": "Codul_fiscal_Legea_227_2015_extras_art_147.pdf",
+    "extracted_from": "_text_integral_neindexat/Codul_fiscal_Legea_227_2015.pdf",
+    "pages": "1, 101-102 (neschimbate)",
+    "sha256": "980efb2a078fad7c3be791be1edbbd0ac7a4890eeb2cf9acdcb3ce3b8018ca6a",
+    "type": "official_extract",
+    "used_articles": [
+      "art. 147 alin. (1)"
+    ]
+  }
+]
