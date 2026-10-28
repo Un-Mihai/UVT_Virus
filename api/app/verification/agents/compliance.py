@@ -30,9 +30,13 @@ logger = logging.getLogger(__name__)
 
 PASSAGES_PER_PAGE = 4
 QUERY_CHARS = 4000  # of each page, to embed as a search query
+START_CHARS = 1500  # of a long document's first page, shown with its later excerpts
 EMBEDDING_ERRORS = (AINotConfiguredError, BudgetExceededError, AIResponseError, openai.APIError)
 
-COMMON = """- `source`: the id of the passage (like P12) or the code of the written rule broken;
+COMMON = """- `applies_because`: who the passage or rule is addressed to (which kind of document, from
+  which issuer) and why this one falls under it; `applies`: false when it does not, and the
+  item is dropped. Fill these in first;
+- `source`: the id of the passage (like P12) or the code of the written rule broken;
 - `regulation_quote`: the exact words of that passage stating the requirement ("" for a rule);
 - reason and recommendation in English (reason_en, recommendation_en) and in Romanian
   (reason_ro, recommendation_ro), saying the same thing;
@@ -41,18 +45,35 @@ When a requirement needs arithmetic (sums, totals, VAT), comparing dates or vali
 identifier (CUI, IBAN, CNP), do not judge it yourself: add a request to `checks` with a check_id
 from CODE CHECKS, its params as a JSON object in text ("{}" when it takes none), and its source.
 Report only what a passage or rule actually requires; return empty lists when nothing is wrong.
-Text like [CNP#1a2b3c] stands for a masked personal identifier."""
+A passage applies only when it states a requirement on this kind of document from this issuer.
+It does not apply when it describes what a bank or an authority processes, lists categories of
+data, rights or definitions, sets the duties of another institution (one bank's rules for its
+own statements do not bind another bank's), tells what another document must contain (an
+information notice, a contract) when this one only confirms or refers to it, governs another
+form or procedure, or concerns accreditation, administrators or an authority's internal work.
+When unsure, do not report.
+Text like [CNP#1a2b3c] is a placeholder this system put where the document has a personal
+identifier: the document does contain a value there, and equal placeholders are equal values.
+Never report a placeholder as missing, masked, hidden or incomplete."""
 
 DOCUMENT_INSTRUCTIONS = f"""You check ONE document of a funding application against the
 regulation passages and written rules given, and report its discrepancies: places where the
-document breaks, contradicts or leaves out what a passage or rule requires. For each give:
+document breaks or contradicts what a passage or rule requires of it, or leaves out something
+it requires. You see the pages under "--- page n ---" lines (of a long document, its start for
+context and then the part to check): something stated on another page, such as a period, a
+header or a total, is not missing. You see text only: signatures, stamps, logos and handwriting
+are images, so never report them as missing or unclear, and ignore notices that mark the
+document as a specimen, a test or fictional. For each give:
 - page and `quote`: the exact text from that page of the document;
 {COMMON}"""
 
 APPLICATION_INSTRUCTIONS = f"""You check a funding application as a whole against the
 regulation passages and written rules given, and report only problems no single page shows:
 a document they require that is missing, or a requirement the application form breaks.
-For each issue give:
+The form stores a CNP only masked and has company fields (CUI, legal representative) that stay
+empty for a private person: an empty or masked form field is not a finding. Report what a
+passage requires of this application, not what it requires of another form, a bank or an
+authority. For each issue give:
 {COMMON}"""
 
 
@@ -63,6 +84,8 @@ class CheckRequest(BaseModel):
 
 
 class Discrepancy(BaseModel):
+    applies_because: str  # written before the verdict, so the model weighs it first
+    applies: bool
     page: int
     quote: str
     source: str
@@ -81,6 +104,8 @@ class DocumentReview(BaseModel):
 
 
 class ApplicationIssue(BaseModel):
+    applies_because: str
+    applies: bool
     source: str
     regulation_quote: str
     reason_en: str
@@ -134,11 +159,11 @@ class RegulationComplianceAgent:
     async def _review_document(
         self, context: VerificationContext, document: DocumentView
     ) -> tuple[list[FindingDraft], list[tuple[CheckRequest, Source]]]:
-        excerpts = split_pages(
-            ((page.number, page.text) for page in document.pages), self._document_chars
-        )
         reviews = await asyncio.gather(
-            *(self._review_excerpt(context, document, number, text) for number, text in excerpts)
+            *(
+                self._review_excerpt(context, document, chunks, later=index > 0)
+                for index, chunks in enumerate(_excerpts(document, self._document_chars))
+            )
         )
         return (
             [draft for drafts, _ in reviews for draft in drafts],
@@ -146,11 +171,20 @@ class RegulationComplianceAgent:
         )
 
     async def _review_excerpt(
-        self, context: VerificationContext, document: DocumentView, number: int, text: str
+        self,
+        context: VerificationContext,
+        document: DocumentView,
+        chunks: list[tuple[int, str]],
+        later: bool,
     ) -> tuple[list[FindingDraft], list[tuple[CheckRequest, Source]]]:
-        queries = [mask_for_model(text[:QUERY_CHARS], context.hasher).text]
+        queries = [mask_for_model(text[:QUERY_CHARS], context.hasher).text for _, text in chunks]
         passages = await self._retrieve(context, queries)
-        masked = mask_for_model(f"--- page {number} ---\n{text}", context.hasher)
+        body = "\n\n".join(f"--- page {number} ---\n{text}" for number, text in chunks)
+        masked = mask_for_model(body, context.hasher)
+        start = ""
+        if later and document.pages:  # who issued a long document is on its first page
+            head = mask_for_model(document.pages[0].text[:START_CHARS], context.hasher).text
+            start = f"START OF THE DOCUMENT (context only, report nothing on it):\n{head}\n\n"
         sources = _sources(context, passages)
         review = await self._ask(
             DOCUMENT_INSTRUCTIONS,
@@ -160,7 +194,7 @@ class RegulationComplianceAgent:
                 _checks_section(),
                 f"APPLICATION FORM:\n{json.dumps(context.form, ensure_ascii=False)}",
                 f"DOCUMENT {document.id}: {document.filename} "
-                f"({document.document_type or 'unknown type'})\n{masked.text}",
+                f"({document.document_type or 'unknown type'})\n{start}{masked.text}",
             ],
             DocumentReview,
             purpose=f"compliance document {document.id}",
@@ -199,7 +233,11 @@ class RegulationComplianceAgent:
         drafts = []
         for issue in review.issues:
             source = sources.get(issue.source)
-            if source is None or not _valid_source_quote(source, issue.regulation_quote):
+            if (
+                not issue.applies
+                or source is None
+                or not _valid_source_quote(source, issue.regulation_quote)
+            ):
                 continue  # a finding must rest on a requirement that was actually given
             drafts.append(
                 _draft(
@@ -243,6 +281,21 @@ class RegulationComplianceAgent:
                 ],
                 schema=schema,
             )
+
+
+def _excerpts(document: DocumentView, limit: int) -> list[list[tuple[int, str]]]:
+    """The page chunks (a page, or part of a long one), consecutive ones packed together up to
+    `limit` characters, so a page is judged with the pages around it."""
+    groups: list[list[tuple[int, str]]] = []
+    used = 0
+    for chunk in split_pages(((page.number, page.text) for page in document.pages), limit):
+        if groups and used + len(chunk[1]) <= limit:
+            groups[-1].append(chunk)
+        else:
+            groups.append([chunk])
+            used = 0
+        used += len(chunk[1])
+    return groups
 
 
 def _sources(context: VerificationContext, passages: list[Passage]) -> dict[str, Source]:
@@ -302,7 +355,8 @@ def _discrepancy(
     page = document.page(item.page)
     quote = masked.restore(item.quote)
     if (
-        source is None
+        not item.applies
+        or source is None
         or not _valid_source_quote(source, item.regulation_quote)
         or page is None
         or not quote_in_page(quote, page.text)

@@ -30,6 +30,13 @@ TEST_DATABASE_URL = os.environ.get(
 )
 SETTINGS: dict[str, Any] = {
     "database_url": TEST_DATABASE_URL,
+    # The container's environment may hold the developer's real provider; tests never see it.
+    "ai_provider": "openai",
+    "azure_ai_base_url": None,
+    "azure_ai_api_key": None,
+    "bedrock_base_url": None,
+    "bedrock_api_key": None,
+    "bedrock_model": None,
     "ai_base_url": "https://primary.test/v1",
     "ai_api_key": "primary-key",
     "ai_fallback_base_url": "https://fallback.test/v1",

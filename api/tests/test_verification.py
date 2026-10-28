@@ -94,8 +94,10 @@ def label(prompt: str, key: str) -> str | None:
     return match.group(1) if match else None
 
 
-def reason(text: str) -> dict[str, str]:
+def reason(text: str, applies: bool = True) -> dict[str, Any]:
     return {
+        "applies_because": "Addressed to this kind of document.",
+        "applies": applies,
         "reason_en": text,
         "reason_ro": f"(ro) {text}",
         "recommendation_en": "Fix it.",
@@ -126,13 +128,21 @@ def document_review(body: dict[str, Any]) -> str:
                 "regulation_quote": "the performance guarantee is at least 10%",
                 "confidence": 0.7,
             },
-            # Neither of these may become a finding: invented quote, unknown source.
+            # None of these may become a finding: invented quote, unknown source, and a valid
+            # quote on a passage the model itself says is not addressed to this document.
             found | {"quote": "Garantia este de 20%", "regulation_quote": "", "confidence": 0.95},
             found
             | {
                 "quote": GUARANTEE_QUOTE,
                 "source": "P999999",
                 "regulation_quote": "",
+                "confidence": 1,
+            },
+            found
+            | reason("Another kind of document.", applies=False)
+            | {
+                "quote": GUARANTEE_QUOTE,
+                "regulation_quote": "the performance guarantee is at least 10%",
                 "confidence": 1,
             },
         ]
@@ -158,6 +168,15 @@ def application_review(body: dict[str, Any]) -> str:
                 "confidence": 0.9,
             }
             | reason("No guarantee letter.")
+        )
+        issues.append(
+            {
+                "source": call,
+                "regulation_quote": "every application includes a guarantee letter",
+                "severity": "bad",
+                "confidence": 0.9,
+            }
+            | reason("A requirement on another form.", applies=False)
         )
     if "[W-SIGN]" in prompt:
         issues.append(
@@ -318,7 +337,39 @@ def test_every_page_is_reviewed_even_when_the_document_exceeds_the_context(
     prompts = [prompt_of(body) for body in provider.schema_requests("DocumentReview")]
     assert any("LAST PAGE REQUIREMENT EVIDENCE" in prompt for prompt in prompts)
     assert any("--- page 2 ---" in prompt for prompt in prompts)
-    assert len(prompts) >= 3  # a long first page is split too
+    assert len(prompts) >= 2  # a long first page is split; its tail and the last page share one
+    # Excerpts after the first still show how the document starts (who issued it).
+    assert [prompt.count("START OF THE DOCUMENT") for prompt in prompts] == [0] + [1] * (
+        len(prompts) - 1
+    )
+
+
+def test_a_short_document_is_reviewed_as_a_whole(make_client: MakeClient) -> None:
+    provider = FakeProvider(
+        answers={
+            "PageFacts": page_facts,
+            "DocumentReview": '{"discrepancies": [], "checks": []}',
+            "ApplicationReview": '{"issues": [], "checks": []}',
+        }
+    )
+    client = make_client(provider)
+    project_id = create_project(client, create_project_type(client))
+    add_regulation(client, "client", "guide.pdf", [REGULATIONS["cui"]])
+    upload(
+        client,
+        project_id,
+        "statement.pdf",
+        ["Period: 01.05.2026 - 23.10.2026"],
+        ["Page two: transactions"],
+    )
+
+    verify(client, project_id)
+
+    # One request: a period stated on page 1 is visible while judging page 2.
+    [prompt] = [prompt_of(body) for body in provider.schema_requests("DocumentReview")]
+    assert prompt.index("Period: 01.05.2026") < prompt.index("Page two: transactions")
+    assert prompt.index("--- page 1 ---") < prompt.index("--- page 2 ---")
+    assert "START OF THE DOCUMENT" not in prompt
 
 
 def test_changed_embedding_dimensions_use_the_text_fallback(make_client: MakeClient) -> None:

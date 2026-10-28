@@ -8,8 +8,10 @@ import io
 import pypdfium2 as pdfium
 
 
-def make_pdf(*pages: list[str]) -> bytes:
-    """One page per argument; each string is one line of text, from the top of an A4 page."""
+def make_pdf(*pages: list[str], watermark: str = "") -> bytes:
+    """One page per argument; each string is one line of text, from the top of an A4 page.
+
+    `watermark` is stamped across every page at 35 degrees, like a SPECIMEN notice."""
     objects: list[bytes] = [b"<< /Type /Catalog /Pages 2 0 R >>", b""]
     font_id = 3
     objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
@@ -20,6 +22,14 @@ def make_pdf(*pages: list[str]) -> bytes:
             escaped = line.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
             commands += [f"({escaped}) Tj", "T*"]
         commands.append("ET")
+        if watermark:
+            commands += [
+                "BT",
+                "/F1 40 Tf",
+                "0.82 0.57 -0.57 0.82 150 300 Tm",
+                f"({watermark}) Tj",
+                "ET",
+            ]
         stream = "\n".join(commands).encode("latin-1")
         objects.append(b"<< /Length %d >>\nstream\n%s\nendstream" % (len(stream), stream))
         content_id = len(objects)

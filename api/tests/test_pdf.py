@@ -6,6 +6,7 @@ from pypdf import PdfReader
 from pypdf.generic import ArrayObject
 
 from app.pdf import HighlightMark, PdfReadError, annotate_pdf, locate_quote, read_pdf
+from app.pdf.reader import _is_diagonal
 from tests.pdf_factory import make_pdf
 
 PDF = make_pdf(
@@ -23,6 +24,31 @@ def test_reads_text_and_word_boxes_per_page() -> None:
     assert first.words[0].top < first.words[-1].top  # measured from the top
     assert second.text == "Second page"
     assert not first.is_scan
+
+
+def test_a_diagonal_watermark_is_not_part_of_the_page_text() -> None:
+    [page] = read_pdf(
+        make_pdf(["Semnatura emitentului", "Contract de finantare"], watermark="SPECIMEN")
+    )
+
+    assert page.text == "Semnatura emitentului\nContract de finantare"
+    assert [word.text for word in page.words] == [
+        "Semnatura",
+        "emitentului",
+        "Contract",
+        "de",
+        "finantare",
+    ]
+
+
+def test_only_text_rotated_off_the_axes_counts_as_diagonal() -> None:
+    def char(*matrix: float) -> dict[str, Any]:
+        return {"matrix": matrix}
+
+    assert _is_diagonal(char(0.82, 0.57, -0.57, 0.82, 0, 0))
+    assert not _is_diagonal(char(1, 0, 0, 1, 0, 0))  # upright
+    assert not _is_diagonal(char(0, 1, -1, 0, 0, 0))  # a vertical label
+    assert not _is_diagonal(char(1, 0, 0.2, 1, 0, 0))  # italic slant
 
 
 def test_rejects_files_that_are_not_pdfs() -> None:

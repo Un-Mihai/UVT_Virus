@@ -71,8 +71,12 @@ export function DocumentViewer({
       .catch(() => {
         if (!cancelled) setLoaded({ url, pdf: null });
       });
+    // Next keeps a route it navigated away from mounted but hidden: effects are cleaned up
+    // here and set up again on return, while state stays. Drop the document with the task
+    // that is destroyed, or the page boxes would ask the dead one for pages on return.
     return () => {
       cancelled = true;
+      setLoaded(null);
       void task?.destroy();
     };
   }, [url]);
@@ -148,24 +152,32 @@ function ViewerPageBox({
     let task: RenderTask | undefined;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry?.isIntersecting) return;
+        // A destroyed document throws on getPage; the reloaded one re-runs this effect.
+        if (cancelled || !entry?.isIntersecting || pdf.loadingTask.destroyed) {
+          return;
+        }
         observer.disconnect();
-        void pdf.getPage(page.number).then((pdfPage) => {
-          const target = canvas.current;
-          if (cancelled || !target) return;
-          // Sharp on high-density screens, capped so long documents stay light on memory.
-          const pixels = Math.min(
-            element.clientWidth * window.devicePixelRatio,
-            2400,
-          );
-          const viewport = pdfPage.getViewport({
-            scale: pixels / pdfPage.getViewport({ scale: 1 }).width,
+        pdf
+          .getPage(page.number)
+          .then((pdfPage) => {
+            const target = canvas.current;
+            if (cancelled || !target) return;
+            // Sharp on high-density screens, capped so long documents stay light on memory.
+            const pixels = Math.min(
+              element.clientWidth * window.devicePixelRatio,
+              2400,
+            );
+            const viewport = pdfPage.getViewport({
+              scale: pixels / pdfPage.getViewport({ scale: 1 }).width,
+            });
+            target.width = Math.floor(viewport.width);
+            target.height = Math.floor(viewport.height);
+            task = pdfPage.render({ canvas: target, viewport });
+            task.promise.catch(() => {}); // cancelled renders reject; nothing to show for them
+          })
+          .catch((error: unknown) => {
+            if (!cancelled) throw error; // leaving the page destroys the document mid-request
           });
-          target.width = Math.floor(viewport.width);
-          target.height = Math.floor(viewport.height);
-          task = pdfPage.render({ canvas: target, viewport });
-          task.promise.catch(() => {}); // cancelled renders reject; nothing to show for them
-        });
       },
       { rootMargin: "800px 0px" },
     );

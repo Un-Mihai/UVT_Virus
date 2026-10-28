@@ -1,10 +1,13 @@
 import io
 from dataclasses import dataclass
+from typing import Any
 
 import pdfplumber
 from pdfplumber.utils.exceptions import PdfminerException
 
 from app.romanian import normalize_ro
+
+DIAGONAL_EPSILON = 0.05  # of a text matrix entry: rotation by about 3 degrees or more
 
 
 class PdfReadError(ValueError):
@@ -38,10 +41,23 @@ class PageContent:
         return not self.words
 
 
+def _is_diagonal(char: dict[str, Any]) -> bool:
+    """Set at an angle that is no multiple of 90 degrees: a SPECIMEN or TEST watermark, whose
+    letters would otherwise land inside the words of the real text. Slanted (italic) text keeps
+    one axis straight and rotated text keeps both, so neither counts."""
+    a, b, c, d = (abs(value) for value in char["matrix"][:4])
+    return bool(min(a, b, c, d) > DIAGONAL_EPSILON)
+
+
 def read_pdf(content: bytes) -> list[PageContent]:
-    """Text and word boxes per page, with Romanian diacritics normalised."""
+    """Text and word boxes per page, with Romanian diacritics normalised and watermarks left
+    out."""
     try:
         with pdfplumber.open(io.BytesIO(content)) as pdf:
+            pages = [
+                page.filter(lambda item: item["object_type"] != "char" or not _is_diagonal(item))
+                for page in pdf.pages
+            ]
             return [
                 PageContent(
                     number=index,
@@ -59,7 +75,7 @@ def read_pdf(content: bytes) -> list[PageContent]:
                         for word in page.extract_words()
                     ],
                 )
-                for index, page in enumerate(pdf.pages, start=1)
+                for index, page in enumerate(pages, start=1)
             ]
     except PdfminerException as error:
         raise PdfReadError("The file is not a readable PDF.") from error
