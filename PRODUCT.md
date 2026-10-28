@@ -95,6 +95,13 @@ page, and the checks that matter (sums, dates, identifiers) are computed in code
   to its owner as a draft, so it leaves the reviewer's list; submitting again clears the verdict.
   The client sees the verdict and the note on their file. Reviewers never see a returned file
   until it is resubmitted.
+- Decided: each project has a list of documents to add, shown to its applicant (and to the
+  reviewer) with what was uploaded for each item (`GET /api/projects/{id}/required-documents`; an
+  upload names its item with `required_document_id`). By default it is read from the client-scope
+  regulations that apply to the project, each item with the regulation and page that require it
+  (a background job when the project is created, or an admin reading again); an admin can add,
+  edit and delete items, and an edited item survives a new reading. The list does not block
+  submitting, and verification does not use it yet.
 - Open decision: which document types and which checks the demo covers. The deterministic checks
   available to rule sets are listed at `GET /api/checks`.
 - Open decision: whether reviewers can correct an extracted value and re-run the checks.

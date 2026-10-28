@@ -51,6 +51,13 @@ class IndexStatus(StrEnum):
     FAILED = "failed"  # no embedding provider, or the provider failed; search falls back
 
 
+class RequiredDocumentSource(StrEnum):
+    """Where an item of a project's list of documents to add comes from."""
+
+    ADMIN = "admin"  # written by an admin, or a regulation item an admin edited
+    REGULATIONS = "regulations"  # read from the regulations; a new reading replaces it
+
+
 class Decision(StrEnum):
     CONFIRMED = "confirmed"
     DISMISSED = "dismissed"

@@ -10,14 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, undefer
 
 from app.auth import CurrentUser, Role, User, require_roles
-from app.deps import HasherDep, OcrDep, SessionDep, SessionsDep, SettingsDep
+from app.deps import AIDep, HasherDep, OcrDep, SessionDep, SessionsDep, SettingsDep
 from app.documents.ingest import add_project_document, read_upload
 from app.documents.ocr_jobs import read_scanned_pages
 from app.documents.reading import reading_of
-from app.models import DocumentPage, PersonalIdentifier, Project, ProjectDocument
+from app.models import DocumentPage, PersonalIdentifier, Project, ProjectDocument, RequiredDocument
 from app.personal_data import IdentifierHasher
 from app.projects.access import editable_project, visible_project
 from app.projects.form import ApplicationForm, stored_form
+from app.projects.required_documents import derive_required_documents
 from app.routes.problems import PROBLEMS
 from app.routes.project_types import existing_project_type
 from app.verification.reports import reviewed_project_ids
@@ -61,6 +62,7 @@ class PageOut(BaseModel):
 
 class DocumentOut(BaseModel):
     id: int
+    required_document_id: int | None  # the item of the list of documents to add it was added for
     filename: str
     sha256: str
     page_count: int
@@ -97,8 +99,16 @@ class ProjectOut(ProjectSummary):
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_project(
-    body: ProjectIn, session: SessionDep, hasher: HasherDep, client: Client
+    body: ProjectIn,
+    background: BackgroundTasks,
+    session: SessionDep,
+    sessions: SessionsDep,
+    settings: SettingsDep,
+    ai: AIDep,
+    hasher: HasherDep,
+    client: Client,
 ) -> ProjectOut:
+    """Creates a draft; its list of documents to add is read from the regulations meanwhile."""
     await existing_project_type(session, body.project_type_id)
     project = Project(
         project_type_id=body.project_type_id,
@@ -110,6 +120,7 @@ async def create_project(
     await session.flush()
     await _save_form(session, project, body.form, hasher)
     await session.commit()
+    background.add_task(derive_required_documents, sessions, ai, settings, project.id)
     return await _project_out(session, project.id)
 
 
@@ -159,9 +170,15 @@ async def upload_document(
     hasher: HasherDep,
     ocr: OcrDep,
     client: Client,
+    required_document_id: int | None = None,
 ) -> DocumentOut:
-    """Stores the PDF; scanned pages are then read by OCR in the background."""
+    """Stores the PDF, for an item of the list of documents to add when `required_document_id`
+    names one; scanned pages are then read by OCR in the background."""
     project = await editable_project(session, client, project_id)
+    if required_document_id is not None:
+        item = await session.get(RequiredDocument, required_document_id)
+        if item is None or item.project_id != project_id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Required document not found.")
     content = await file.read()
     pages = await read_upload(content, settings.max_upload_mb)
     document = await add_project_document(
@@ -173,6 +190,7 @@ async def upload_document(
         hasher,
         ocr_available=ocr is not None,
     )
+    document.required_document_id = required_document_id
     await session.commit()
     if ocr and any(page.is_scan for page in pages):
         background.add_task(read_scanned_pages, sessions, ocr, settings, hasher, document.id)
@@ -301,6 +319,7 @@ def document_out(document: ProjectDocument) -> DocumentOut:
     """The document with its pages; `pages` must be loaded."""
     return DocumentOut(
         id=document.id,
+        required_document_id=document.required_document_id,
         filename=document.filename,
         sha256=document.sha256,
         page_count=document.page_count,

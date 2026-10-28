@@ -218,6 +218,19 @@ export const en = {
     removing: "Deleting…",
     removeConfirm: "Delete {name}?",
   },
+  required: {
+    title: "Documents to add",
+    progress: "{added} of {total} added",
+    empty:
+      "No list of documents has been set for this project yet. Upload the documents you have below.",
+    emptyReviewer: "No list of documents was set for this project.",
+    added: "Added",
+    notAdded: "Not added yet",
+    fromRegulation: "Required by {file}, page {page}",
+    setByAdmin: "Set by an administrator",
+    upload: "Upload PDF",
+    uploading: "Uploading {name}…",
+  },
   review: {
     title: "Findings",
     summary: {
@@ -316,6 +329,23 @@ export const en = {
     activeRule: "Active: used in the next checks",
     duplicateRule: "There is already a rule with that code here.",
     duplicateType: "A project type with that code already exists.",
+    requiredTitle: "Documents to add",
+    requiredLead:
+      "The applicant sees this list on the project and adds a PDF for each item. By default it is read from the client regulations that apply to the project. Items you write or edit are kept when the regulations are read again.",
+    noRequired:
+      "No document listed yet. Read the regulations, or add a document by hand.",
+    readRegulations: "Read from the regulations",
+    readingRegulations: "Reading the regulations…",
+    fromRegulation: "Read from {file}, page {page}",
+    setByAdmin: "Written by an administrator",
+    newRequired: "Add a document",
+    requiredName: "Document",
+    requiredDescription: "What it must show",
+    requiredDescriptionHint:
+      "Optional: validity, issuer or form, for example issued within the last 30 days.",
+    addRequired: "Add document",
+    adding: "Adding…",
+    removeRequiredConfirm: "Remove {name} from the list?",
   },
   home: {
     lead: "Applications, reviews and regulations, depending on your role.",

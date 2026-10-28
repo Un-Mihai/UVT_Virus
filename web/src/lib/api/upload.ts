@@ -7,10 +7,18 @@ function asFormData(body: { file: Blob }) {
   return form;
 }
 
-/** Uploads a PDF to a client's project (Client Components only). */
-export function uploadProjectDocument(projectId: number, file: File) {
+/** Uploads a PDF to a client's project, for an item of its list of documents to add when
+ *  `requiredDocumentId` is given (Client Components only). */
+export function uploadProjectDocument(
+  projectId: number,
+  file: File,
+  requiredDocumentId?: number,
+) {
   return api.POST("/api/projects/{project_id}/documents", {
-    params: { path: { project_id: projectId } },
+    params: {
+      path: { project_id: projectId },
+      query: { required_document_id: requiredDocumentId },
+    },
     body: { file },
     bodySerializer: asFormData,
   });

@@ -37,6 +37,26 @@ can omit later requirements. Use **Process again** after fixing provider access 
 embedding model or dimensions. Search excludes incompatible vectors. Providers without an
 embeddings endpoint need an embeddings-capable fallback; see [AI providers](ai-providers.md).
 
+## Documents to add
+
+Each project has a list of documents its applicant must add (`required_documents`, shown on the
+project page with an upload button per item, and ticked once a PDF was uploaded for it). By
+default it is read from the **client-scope** regulations that apply to the project (every
+project, its type, the project itself) and the admins' written rules: a background job right
+after the project is created, or an admin's **Read from the regulations** button on the project's
+level in the regulation editor. Retrieval asks for the documents an applicant must submit, in
+Romanian and English, for this project type. For each passage the model first states whom it
+asks for a document and whether it applies (items marked as not applying are dropped), then
+names the document with the exact quote; an item whose quote is not in its passage, whose source
+was not given, or whose name repeats an earlier one is dropped in code. Items keep the regulation
+and page they were read from.
+
+An admin can add, edit and delete items for a project. An edited item becomes the admin's and is
+kept when the regulations are read again; items still read from the regulations are replaced by
+the new reading. Reading is not repeated by itself when regulations change later: use the button.
+Without a provider or applicable regulations the list stays empty. It is guidance for the
+applicant: submitting and verification do not depend on it.
+
 Apply migrations with `docker compose exec api alembic upgrade head`. Existing PDFs uploaded
 before passage indexing was introduced need **Process again**. Background processing runs in
 the API process; after a restart, retry interrupted uploads. Vector search is exact, with no

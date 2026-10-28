@@ -19,6 +19,7 @@ import { hasRole } from "@/lib/roles";
 import { ApplicationDetails } from "./application-details";
 import { DocumentsSection } from "./documents-section";
 import { ProjectActions } from "./project-actions";
+import { RequiredDocumentsSection } from "./required-documents-section";
 import { ReviewPane } from "./review/review-pane";
 import { VerdictForm } from "./verdict-form";
 
@@ -30,16 +31,18 @@ type Project = components["schemas"]["ProjectOut"];
 async function load(projectId: number) {
   const path = { params: { path: { project_id: projectId } } };
   try {
-    const [project, report, types] = await Promise.all([
+    const [project, report, types, required] = await Promise.all([
       api.GET("/api/projects/{project_id}", path),
       api.GET("/api/projects/{project_id}/verifications/latest", path),
       api.GET("/api/project-types"),
+      api.GET("/api/projects/{project_id}/required-documents", path),
     ]);
     return {
       reachable: true,
       project: project.data,
       report: report.data,
       types: types.data ?? [],
+      required: required.data ?? [],
     };
   } catch {
     return {
@@ -47,6 +50,7 @@ async function load(projectId: number) {
       project: undefined,
       report: undefined,
       types: [],
+      required: [],
     };
   }
 }
@@ -93,7 +97,7 @@ export async function Workspace({
       </p>
     );
   }
-  const { project, report, types } = loaded;
+  const { project, report, types, required } = loaded;
   if (!project) notFound();
 
   const text = dictionary.workspace;
@@ -172,6 +176,14 @@ export async function Workspace({
           locale={locale}
         />
       </div>
+      <RequiredDocumentsSection
+        projectId={project.id}
+        items={required}
+        documents={project.documents}
+        editable={isOwner && draft}
+        locale={locale}
+        dictionary={dictionary}
+      />
       <DocumentsSection
         projectId={project.id}
         documents={project.documents}

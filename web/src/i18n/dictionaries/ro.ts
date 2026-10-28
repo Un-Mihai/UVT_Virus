@@ -217,6 +217,20 @@ export const ro: Dictionary = {
     removing: "Se șterge…",
     removeConfirm: "Ștergeți {name}?",
   },
+  required: {
+    title: "Documente de adăugat",
+    progress: "{added} din {total} adăugate",
+    empty:
+      "Pentru acest proiect nu a fost stabilită încă o listă de documente. Încărcați mai jos documentele pe care le aveți.",
+    emptyReviewer:
+      "Pentru acest proiect nu a fost stabilită o listă de documente.",
+    added: "Adăugat",
+    notAdded: "Încă neadăugat",
+    fromRegulation: "Cerut de {file}, pagina {page}",
+    setByAdmin: "Stabilit de un administrator",
+    upload: "Încărcați PDF",
+    uploading: "Se încarcă {name}…",
+  },
   review: {
     title: "Constatări",
     summary: {
@@ -315,6 +329,23 @@ export const ro: Dictionary = {
     activeRule: "Activă: folosită la următoarele verificări",
     duplicateRule: "Există deja aici o regulă cu acest cod.",
     duplicateType: "Există deja un tip de proiect cu acest cod.",
+    requiredTitle: "Documente de adăugat",
+    requiredLead:
+      "Solicitantul vede această listă în proiect și adaugă un PDF pentru fiecare element. Implicit, lista este citită din reglementările pentru solicitant care se aplică proiectului. Elementele scrise sau modificate de dumneavoastră se păstrează când reglementările sunt citite din nou.",
+    noRequired:
+      "Niciun document în listă încă. Citiți reglementările sau adăugați un document manual.",
+    readRegulations: "Citiți din reglementări",
+    readingRegulations: "Se citesc reglementările…",
+    fromRegulation: "Citit din {file}, pagina {page}",
+    setByAdmin: "Scris de un administrator",
+    newRequired: "Adăugați un document",
+    requiredName: "Document",
+    requiredDescription: "Ce trebuie să ateste",
+    requiredDescriptionHint:
+      "Opțional: valabilitate, emitent sau formă, de exemplu emis în ultimele 30 de zile.",
+    addRequired: "Adăugați documentul",
+    adding: "Se adaugă…",
+    removeRequiredConfirm: "Eliminați {name} din listă?",
   },
   home: {
     lead: "Cereri, evaluări și regulamente, în funcție de rolul dumneavoastră.",

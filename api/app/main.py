@@ -22,6 +22,7 @@ from app.routes import (
     project_types,
     projects,
     regulations,
+    required_documents,
     verifications,
 )
 from app.verification.orchestrator import default_orchestrator
@@ -63,6 +64,7 @@ def create_app(
         project_types,
         regulations,
         projects,
+        required_documents,
         verifications,
         findings,
     ):

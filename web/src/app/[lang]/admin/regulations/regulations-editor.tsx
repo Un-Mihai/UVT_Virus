@@ -11,6 +11,7 @@ import { hasRole } from "@/lib/roles";
 
 import { NewProjectType, TypeActivation } from "./project-types";
 import { RegulationFiles } from "./regulation-files";
+import { RequiredDocumentsEditor } from "./required-documents";
 import { WrittenRules } from "./rules";
 
 type Scope = "client" | "reviewer";
@@ -53,21 +54,33 @@ function href(locale: Locale, level: Level, scope: Scope) {
 
 async function load(level: Level, scope: Scope) {
   try {
-    const [types, projects, set] = await Promise.all([
+    const [types, projects, set, required] = await Promise.all([
       api.GET("/api/project-types"),
       api.GET("/api/admin/projects"),
       api.GET("/api/regulations", {
         params: { query: { scope, ...levelParams(level) } },
       }),
+      level.kind === "project"
+        ? api.GET("/api/projects/{project_id}/required-documents", {
+            params: { path: { project_id: level.id } },
+          })
+        : undefined,
     ]);
     return {
       reachable: true,
       types: types.data ?? [],
       projects: projects.data ?? [],
       set: set.data,
+      required: required?.data,
     };
   } catch {
-    return { reachable: false, types: [], projects: [], set: undefined };
+    return {
+      reachable: false,
+      types: [],
+      projects: [],
+      set: undefined,
+      required: undefined,
+    };
   }
 }
 
@@ -90,7 +103,10 @@ export async function RegulationsEditor({
   }
   const scope: Scope = query.scope === "reviewer" ? "reviewer" : "client";
   const level = levelOf(query);
-  const { reachable, types, projects, set } = await load(level, scope);
+  const { reachable, types, projects, set, required } = await load(
+    level,
+    scope,
+  );
   if (!reachable) {
     return (
       <p role="alert" className="mt-12 max-w-prose text-bad">
@@ -244,6 +260,22 @@ export async function RegulationsEditor({
               errors={dictionary.errors}
             />
           )}
+        </section>
+      )}
+      {level.kind === "project" && required && (
+        <section aria-labelledby="required-title" className="panel mt-8">
+          <h2 id="required-title" className={sectionTitle}>
+            {text.requiredTitle}
+          </h2>
+          <p className="max-w-prose text-ink-2">{text.requiredLead}</p>
+          <RequiredDocumentsEditor
+            key={`required-${level.id}`}
+            projectId={level.id}
+            items={required}
+            locale={locale}
+            text={{ ...text, form: dictionary.form }}
+            errors={dictionary.errors}
+          />
         </section>
       )}
     </>

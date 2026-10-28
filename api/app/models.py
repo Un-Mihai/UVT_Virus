@@ -22,6 +22,7 @@ from app.vocabulary import (
     IndexStatus,
     OcrStatus,
     ProjectStatus,
+    RequiredDocumentSource,
     RunStatus,
     Scope,
     Severity,
@@ -181,12 +182,38 @@ class Project(Base):
     )
 
 
+class RequiredDocument(Base):
+    """A document the applicant must add to one project: written by an admin, or read from the
+    client-scope regulations that apply to the project (app/projects/required_documents.py)."""
+
+    __tablename__ = "required_documents"
+    __table_args__ = (CheckConstraint(check_in("source", RequiredDocumentSource), name="source"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str]
+    description: Mapped[str] = mapped_column(default="")
+    source: Mapped[str]
+    # Where a regulations item was read; None on admin items and when the regulation is deleted.
+    regulation_document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("regulation_documents.id", ondelete="SET NULL")
+    )
+    regulation_page: Mapped[int | None]
+    regulation_quote: Mapped[str | None]
+
+
 class ProjectDocument(Base):
     __tablename__ = "project_documents"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     project_id: Mapped[int] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"), index=True
+    )
+    # The list item this upload was added for; None for uploads outside the list.
+    required_document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("required_documents.id", ondelete="SET NULL"), index=True
     )
     filename: Mapped[str]
     sha256: Mapped[str] = mapped_column(index=True)
