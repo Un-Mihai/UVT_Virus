@@ -12,11 +12,20 @@ build stays consistent and free of "AI slop".
 - **A working stack on day one.** Web, API, database and AI are wired together; `/status` shows
   each one and runs a live AI check.
 - **AI from environment variables only.** Azure AI Foundry, OpenAI, hackathon tokens or local
-  models, switched in `.env`. A second account takes over when the first fails or runs out of
+  models, switched in `.env`; `AI_PROVIDER=azure` uses the Azure backend API and
+  `AI_PROVIDER=bedrock` uses an AWS Bedrock API key. A second account takes over when the first fails or runs out of
   credit, a daily budget caps spend, and every call is logged with its tokens and cost.
 - **Sign-in from the start.** Keycloak (OpenID Connect) locally and on Azure: every page and API
   call needs a user, roles arrive in each token, and demo accounts are ready for the jury
   ([docs/auth.md](docs/auth.md)).
+- **Three roles, two verification pipelines.** `client` applies for funding and gets a
+  high-confidence check against the client rules; `reviewer` audits submissions against the
+  internal rules at a lower threshold; `admin` manages the regulations for each. Each role sees
+  only its own rule set's findings.
+- **Everything is stored.** Regulations per project type and scope, client form input, and the
+  uploaded and highlighted documents are persisted in PostgreSQL.
+- **Highlights-only review.** A list of flagged findings beside the highlighted document; click a
+  finding and the viewer jumps to its page and passage.
 - **Retrieval ready.** pgvector for embeddings, with tested patterns in the
   `document-verification` skill.
 - **Agents that follow the same rules.** `AGENTS.md` holds the stack rules and the definition of
@@ -36,8 +45,8 @@ build stays consistent and free of "AI slop".
 | Web | Next.js 16.4 (App Router, React 19.3, React Compiler, Cache Components), TypeScript, Tailwind CSS 4 |
 | API | FastAPI, Python 3.13, Poetry, SQLAlchemy 2 (async), Alembic |
 | Data | PostgreSQL 17 with pgvector |
-| Sign-in | Keycloak 26 (OpenID Connect with PKCE); tokens in encrypted httpOnly cookies, checked by the API |
-| AI | Any OpenAI-compatible API; defaults to Azure AI Foundry `gpt-5-mini` and `text-embedding-3-small` |
+| Sign-in | Keycloak 26 (OpenID Connect with PKCE); roles `client`, `reviewer`, `admin`; tokens in encrypted httpOnly cookies, checked by the API |
+| AI | Any OpenAI-compatible API, switched in `.env` with `AI_PROVIDER=azure` or `AI_PROVIDER=bedrock` (AWS Bedrock API key); defaults to Azure AI Foundry `gpt-5-mini` and `text-embedding-3-small` |
 | Local | Docker Compose |
 | Cloud | Terraform: Azure Container Apps, PostgreSQL Flexible Server, Container Registry, AI Foundry, Keycloak |
 | Quality | Ruff, mypy, pytest, ESLint, Prettier, Vitest, knip, impeccable and taste UI linters, GitHub Actions |
@@ -67,7 +76,7 @@ Or ask your agent: "Set up this project on my machine." Without `make`, run
 
 The setup installs any missing tool from the table below, with no admin password, then creates
 `.env`, installs the web and API dependencies, and starts the stack on http://localhost:3000.
-Sign in as `reviewer` (or `admin`) with the password `demo`.
+Sign in as `client`, `reviewer` or `admin` with the password `demo`.
 `make doctor` reports what is installed without changing anything. Whatever needs you (Docker,
 for example) is printed as "Needs you".
 
@@ -83,8 +92,9 @@ the setup says so.
 
 ### 3. Connect an AI provider
 
-Put a base URL and key in `.env` ([docs/ai-providers.md](docs/ai-providers.md) has ready-made
-blocks), run `docker compose up -d api`, then press **Run AI check** on http://localhost:3000/status.
+Choose the provider in `.env` with `AI_PROVIDER=azure` (`AZURE_AI_BASE_URL`, `AZURE_AI_API_KEY`)
+or `AI_PROVIDER=bedrock` (`BEDROCK_API_KEY`, `BEDROCK_BASE_URL`, `BEDROCK_MODEL`)
+([docs/ai-providers.md](docs/ai-providers.md) has ready-made blocks), run `docker compose up -d api`, then press **Run AI check** on http://localhost:3000/status.
 
 ## Working with your agent
 
@@ -117,7 +127,7 @@ their own when a task matches.
 |---|---|
 | `make setup` / `make doctor` | Install what is missing / only report |
 | `make up` / `make down` | Start or stop the stack; run `make up` again after every pull |
-| `make reset-auth` | Re-import the users and roles from `infra/keycloak/realm-app.json` |
+| `make reset-auth` | Re-import the `client`, `reviewer` and `admin` users and roles from `infra/keycloak/realm-app.json` |
 | `make check` | Every API and web check |
 | `make check-ui` | Impeccable on source and rendered pages, plus taste's linter |
 | `make fix` | Formatting and autofixable lint |

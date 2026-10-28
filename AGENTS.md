@@ -19,6 +19,9 @@ open. When the team decides something, record it there in the same change.
   `docs/auth.md`.
 - `infra/terraform/`: Azure Container Apps, Container Registry, PostgreSQL, AI Foundry, Keycloak.
 - AI: any OpenAI-compatible endpoint, chosen only by environment variables (`.env.example`).
+  `AI_PROVIDER=azure` uses `AZURE_AI_BASE_URL` and `AZURE_AI_API_KEY`; `AI_PROVIDER=bedrock`
+  uses `BEDROCK_API_KEY`, `BEDROCK_BASE_URL` and `BEDROCK_MODEL`. Both route only through
+  `AIClient` (`api/app/ai/client.py`).
 
 ## Setup on a new machine
 
@@ -84,15 +87,22 @@ host, run `npm install` in `web/` (editors need it too), or read the same files 
   `alembic merge heads`.
 - Tests run against the real `app_test` database and a fake AI provider (`tests/conftest.py`).
   Tests never call a real provider.
+- Regulation rules are stored per project type with a `verification_scope` of `"client"` or
+  `"reviewer"`; the two scopes never share rules.
+- Role-based confidence filtering on findings: `client` receives only client-scope findings with
+  `confidence >= CLIENT_CONFIDENCE_THRESHOLD` (e.g. `0.85`); `reviewer` receives reviewer-scope
+  findings with `confidence >= REVIEWER_CONFIDENCE_THRESHOLD` (e.g. `0.55`).
 
 ### Sign-in
 
 - Every `/api` route needs a signed-in user: take `user: CurrentUser` (`app/auth.py`) or give
   the router `dependencies=[Depends(current_user)]`. Only `/health` is public.
-- Check roles in the API (`user.roles`), not only by hiding buttons.
+- Check roles in the API (`user.roles`), not only by hiding buttons. The roles are `client`,
+  `reviewer` and `admin`; every API route enforces them through `user.roles`.
 - Tokens stay on the server, in encrypted httpOnly cookies. Never pass one to a Client
   Component, `NEXT_PUBLIC_*` or browser storage.
-- Demo users `reviewer` and `admin`, password `demo`. After editing `realm-app.json`, run
+- Demo users `client`, `reviewer` and `admin` (each with the role of the same name in
+  `infra/keycloak/realm-app.json`), password `demo`. After editing `realm-app.json`, run
   `make reset-auth`. API tests sign their own tokens (`make_client`, `make_token`).
 - To call the running app from the shell, sign in with the wrapper: `node scripts/signed_in.mjs
   http://localhost:3000 curl -s http://localhost:3000/api/me`.

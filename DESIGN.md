@@ -145,6 +145,27 @@ Dot, name, detail, status word. The detail teaches the next step when something 
 Hairline rows, Ink Faint headers, tabular numbers right-aligned, durations and money formatted by
 `web/src/lib/format.ts`.
 
+### Admin regulation editor (`/admin/regulations`)
+Administrators pick a funding project type, then switch cleanly between two rule sets: the
+**Client Verification Rules** (the applicant's pre-submission regulation) and the **Reviewer
+Verification Rules** (the internal audit regulation). Only one set is editable at a time and the
+active one is named in the page.
+
+### Document review workspace (`/projects/[id]`)
+A two-pane ledger split:
+
+1. **Left pane, highlights-only list.** A hairline-divided vertical list of the flagged findings
+   for the active role's rule set and confidence threshold, and nothing else. Each row shows the
+   status (`bad` or `warn`, always with its word), the confidence as a tabular percentage
+   (`92%`), the document name, the page number, the exact quote, the error reason and the change
+   recommendation.
+2. **Right pane, highlighted document viewer.** Renders the highlighted file provided by the
+   backend, in context.
+
+**Jump to location.** Clicking a row in the left list scrolls the viewer smoothly to the exact
+page and highlight anchor (`#finding-{id}`) and moves focus there. The passage is highlighted and
+its reason and recommendation appear inline.
+
 ## Do's and Don'ts
 
 ### Do:

@@ -14,8 +14,20 @@ Open decision: the challenge track is confirmed on 27 October 2026. The working 
 staff who check large sets of documents by hand, such as bank teams reviewing documentation for
 investment projects or procurement files before money is released.
 
-Everyone signs in (docs/auth.md). The realm has two roles, `reviewer` and `admin`. Open decision:
-what each role may do; no route checks a role yet.
+Everyone signs in (docs/auth.md). The realm (`infra/keycloak/realm-app.json`) has three roles,
+enforced in the API with `require_roles`:
+
+- `client`: applies for funding projects. Fills in the form, uploads documents (stored in
+  PostgreSQL) and starts the **Client Verification Process**, which checks the file against the
+  client eligibility rules with a high confidence threshold (`CLIENT_CONFIDENCE_THRESHOLD`,
+  e.g. `0.85`). The client gets a high-certainty summary and the highlighted document, with the
+  exact quote, the reason for each error and a recommended change.
+- `reviewer`: inspects and verifies the projects clients submit, through a separate **Reviewer
+  Verification Process**. It checks against the internal audit and compliance rules with a lower
+  threshold (`REVIEWER_CONFIDENCE_THRESHOLD`, e.g. `0.55`), so it shows definite errors and
+  medium-confidence findings.
+- `admin`: uploads, views and edits the active regulation documents and rule sets per funding
+  project type, kept apart for the client scope and the reviewer scope.
 
 ## Product Purpose
 
@@ -44,6 +56,14 @@ page, and the checks that matter (sums, dates, identifiers) are computed in code
 
 ## Capabilities and Constraints
 
+- Database persistence (PostgreSQL): regulation documents per project type and verification scope
+  (`client` or `reviewer`), the client's form input (JSON), uploaded files (raw bytes and
+  extracted pages) and verification findings (`DocumentFinding`).
+- Multi-agent orchestration runs a separate rule set per project type and verification scope. It
+  combines extraction agents, deterministic Python checks (sums, dates, CUI/IBAN/CNP) and
+  regulation compliance agents.
+- The backend returns the annotated, highlighted document and highlight anchors together with the
+  error reasons and change recommendations.
 - Proposed (confirm): the cost per checked document is measured and shown, from the `ai_calls`
   ledger.
 - Proposed (confirm): personal data such as CNPs and private persons' IBANs is masked before it
