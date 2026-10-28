@@ -2,6 +2,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import * as client from "openid-client";
 
 import {
+  isLocale,
+  LOCALE_COOKIE,
+  negotiateLocale,
+  splitLocale,
+  withLocale,
+} from "@/i18n/locales";
+import {
   ACCESS_COOKIE,
   type Access,
   cookieOptions,
@@ -13,10 +20,46 @@ import {
   unseal,
 } from "@/lib/auth/session";
 
-// Every page and /api call needs a signed-in user. /auth/* runs the sign-in itself.
-export async function proxy(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith("/auth/")) return NextResponse.next();
+const ONE_YEAR = 60 * 60 * 24 * 365;
 
+// Pages live under /{language}; every page and /api call needs a signed-in user. /auth/* runs
+// the sign-in itself.
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  if (pathname.startsWith("/auth/")) return NextResponse.next();
+  if (needsLanguage(pathname))
+    return NextResponse.redirect(languageUrl(request));
+
+  const response = await signedIn(request);
+  const [locale] = splitLocale(pathname);
+  if (locale && request.cookies.get(LOCALE_COOKIE)?.value !== locale) {
+    response.cookies.set(LOCALE_COOKIE, locale, cookieOptions(ONE_YEAR));
+  }
+  return response;
+}
+
+/** A page address without a language prefix; /api and files (anything with a dot) have none. */
+function needsLanguage(pathname: string) {
+  if (pathname.startsWith("/api/")) return false;
+  if (pathname.split("/").at(-1)?.includes(".")) return false;
+  return splitLocale(pathname)[0] === null;
+}
+
+/** The same address in the remembered language, else the browser's, else English. */
+function languageUrl(request: NextRequest) {
+  const remembered = request.cookies.get(LOCALE_COOKIE)?.value;
+  const locale = isLocale(remembered)
+    ? remembered
+    : negotiateLocale(request.headers.get("accept-language"));
+  const url = new URL(
+    withLocale(locale, request.nextUrl.pathname),
+    settings().appUrl,
+  );
+  url.search = request.nextUrl.search;
+  return url;
+}
+
+async function signedIn(request: NextRequest) {
   const session = await unseal<Session>(
     request.cookies.get(SESSION_COOKIE)?.value,
   );

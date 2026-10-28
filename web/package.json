@@ -23,6 +23,7 @@
     "next": "16.4.3",
     "openapi-fetch": "^0.17.0",
     "openid-client": "^6.8.8",
+    "pdfjs-dist": "6.4.299",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "server-only": "^0.0.1"

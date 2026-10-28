@@ -7,6 +7,7 @@ from sqlalchemy import select
 from app.auth import current_user
 from app.deps import AIDep, SessionDep
 from app.models import AiCall
+from app.routes.problems import Problem
 
 router = APIRouter(prefix="/api/ai", tags=["ai"], dependencies=[Depends(current_user)])
 
@@ -36,10 +37,6 @@ class Usage(BaseModel):
     recent_calls: list[AiCallOut]
 
 
-class Problem(BaseModel):
-    detail: str
-
-
 class Ready(BaseModel):
     ready: bool
 
@@ -47,8 +44,9 @@ class Ready(BaseModel):
 class CheckResult(BaseModel):
     chat_model: str
     chat_answer: bool
-    embedding_model: str
-    embedding_dimensions: int
+    # None when no configured account has an embeddings endpoint (Bedrock).
+    embedding_model: str | None
+    embedding_dimensions: int | None
 
 
 @router.get("/usage")
@@ -57,7 +55,7 @@ async def usage(ai: AIDep, session: SessionDep, limit: int = Query(20, ge=1, le=
     return Usage(
         configured=bool(ai.providers),
         providers=[provider.name for provider in ai.providers],
-        chat_model=ai.settings.ai_chat_model,
+        chat_model=ai.chat_model,
         embedding_model=ai.settings.ai_embedding_model,
         daily_budget_usd=float(ai.settings.ai_daily_budget_usd),
         spent_today_usd=float(await ai.spent_today()),
@@ -80,9 +78,16 @@ async def check(ai: AIDep) -> CheckResult:
         messages=[{"role": "user", "content": "Set ready to true."}],
         schema=Ready,
     )
+    if not ai.embedding_providers:
+        return CheckResult(
+            chat_model=ai.chat_model,
+            chat_answer=answer.ready,
+            embedding_model=None,
+            embedding_dimensions=None,
+        )
     vectors = await ai.embed(purpose="connection check", texts=["connection check"])
     return CheckResult(
-        chat_model=ai.settings.ai_chat_model,
+        chat_model=ai.chat_model,
         chat_answer=answer.ready,
         embedding_model=ai.settings.ai_embedding_model,
         embedding_dimensions=len(vectors[0]),

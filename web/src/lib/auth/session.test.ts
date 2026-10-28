@@ -7,7 +7,10 @@ it("round-trips sealed values and rejects anything else", async () => {
 
   expect(sealed).not.toContain("secret");
   expect(await unseal(sealed)).toEqual({ refreshToken: "secret" });
-  expect(await unseal(sealed.slice(0, -2) + "xx")).toBeNull();
+  // Change a ciphertext character: the last ones can be padding bits that decode the same.
+  const [header, key, iv, ciphertext, tag] = sealed.split(".");
+  const flipped = (ciphertext[0] === "A" ? "B" : "A") + ciphertext.slice(1);
+  expect(await unseal([header, key, iv, flipped, tag].join("."))).toBeNull();
   expect(await unseal(undefined)).toBeNull();
 });
 

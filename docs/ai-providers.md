@@ -16,14 +16,22 @@ All calls go through `AIClient` (`api/app/ai/client.py`), which:
 Copy one block into `.env`, restart the API (`docker compose up -d api`), then press **Run AI
 check** on http://localhost:3000/status.
 
+`AI_PROVIDER` picks which block is the primary account: `openai` (the default: `AI_BASE_URL` and
+`AI_API_KEY`, any OpenAI-compatible endpoint), `azure` (`AZURE_AI_*`) or `bedrock` (`BEDROCK_*`).
+The resolvers live in `api/app/ai/providers.py`; a new provider is one function there.
+
 ## Azure AI Foundry (Azure for Students credits)
 
 ```bash
-AI_BASE_URL=https://<resource>.openai.azure.com/openai/v1/
-AI_API_KEY=<key 1 from the resource's Keys and Endpoint page>
+AI_PROVIDER=azure
+AZURE_AI_BASE_URL=https://<resource>.openai.azure.com/openai/v1/
+AZURE_AI_API_KEY=<key 1 from the resource's Keys and Endpoint page>
 AI_CHAT_MODEL=gpt-5-mini
 AI_EMBEDDING_MODEL=text-embedding-3-small
 ```
+
+`AI_PROVIDER=openai` with the same URL and key in `AI_BASE_URL` and `AI_API_KEY` works as well;
+that is what `make azure-env` prints and what Terraform sets on Azure.
 
 - After `make deploy`, `make azure-env` prints the first two lines for the account Terraform
   created.
@@ -34,6 +42,22 @@ AI_EMBEDDING_MODEL=text-embedding-3-small
   Check before planning around another model (`docs/deploy-azure.md`, step 2).
 - Claude models on Foundry need a pay-as-you-go subscription with Marketplace access; student
   credits cannot use them.
+
+## AWS Bedrock (API key)
+
+```bash
+AI_PROVIDER=bedrock
+BEDROCK_BASE_URL=https://bedrock-runtime.<region>.amazonaws.com/openai/v1
+BEDROCK_API_KEY=<a Bedrock API key>
+BEDROCK_MODEL=<the model id from the Bedrock console>
+AI_PRICE_INPUT_PER_MTOK=...
+AI_PRICE_OUTPUT_PER_MTOK=...
+```
+
+- `BEDROCK_MODEL` replaces `AI_CHAT_MODEL` for this account; the `ai_calls` ledger records it.
+- Bedrock's OpenAI-compatible endpoint has no embeddings. The AI check then skips the embedding,
+  and `AIClient.embed` uses the fallback account (`AI_FALLBACK_*`) when one is set.
+- Structured output depends on the model: run the AI check on `/status` before relying on it.
 
 ## OpenAI
 

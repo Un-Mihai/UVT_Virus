@@ -7,6 +7,13 @@ resource "azurerm_container_app_environment" "main" {
   tags                       = local.tags
 }
 
+# PERSONAL_DATA_HASH_KEY: HMAC key the API compares CNPs with; never rotate it casually, stored
+# hashes stop matching new uploads.
+resource "random_password" "personal_data_hash_key" {
+  length  = 48
+  special = false
+}
+
 locals {
   registry = azurerm_container_registry.main.login_server
 
@@ -17,6 +24,8 @@ locals {
       AI_EMBEDDING_DIMENSIONS = tostring(var.embedding_model.dimensions)
       AI_DAILY_BUDGET_USD     = tostring(var.ai_daily_budget_usd)
       AUTH_ISSUER             = local.auth_issuer
+      # Tesseract takes a CPU core per page and the API has half of one.
+      OCR_CONCURRENCY = "1"
     },
     local.ai_base_url == null ? {} : { AI_BASE_URL = local.ai_base_url },
     var.ai_fallback_base_url == null ? {} : { AI_FALLBACK_BASE_URL = var.ai_fallback_base_url },
@@ -26,14 +35,15 @@ locals {
   # Secret name => environment variable; values below. The conditions only test whether a key
   # exists, so they are safe to mark non-sensitive (for_each refuses sensitive keys).
   api_secrets = merge(
-    { database-url = "DATABASE_URL" },
+    { database-url = "DATABASE_URL", personal-data-hash-key = "PERSONAL_DATA_HASH_KEY" },
     var.create_ai || nonsensitive(var.ai_api_key != null) ? { ai-api-key = "AI_API_KEY" } : {},
     nonsensitive(var.ai_fallback_api_key != null) ? { ai-fallback-api-key = "AI_FALLBACK_API_KEY" } : {},
   )
   api_secret_values = {
-    database-url        = local.database_url
-    ai-api-key          = local.ai_api_key
-    ai-fallback-api-key = var.ai_fallback_api_key
+    database-url           = local.database_url
+    ai-api-key             = local.ai_api_key
+    ai-fallback-api-key    = var.ai_fallback_api_key
+    personal-data-hash-key = random_password.personal_data_hash_key.result
   }
 
   web_env = {

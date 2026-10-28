@@ -6,6 +6,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     VIRTUAL_ENV=/opt/venv \
     PATH="/opt/venv/bin:$PATH"
 RUN python -m venv /opt/venv
+# OCR for scanned PDF pages (app/ocr): Tesseract with the Romanian pack (English comes with it).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-ron \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 FROM base AS poetry

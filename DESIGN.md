@@ -53,6 +53,12 @@ components:
     padding: "8px 16px"
   button-primary-hover:
     backgroundColor: "{colors.accent-hover}"
+  button-secondary:
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "8px 16px"
+  button-secondary-hover:
+    backgroundColor: "{colors.surface-2}"
   button-quiet:
     textColor: "{colors.ink-2}"
     rounded: "{rounded.control}"
@@ -114,7 +120,17 @@ inconsistency). Each state also has a word; colour is never the only signal.
 Single column, max 64rem, 20px side gutters (40px from 640px). Sections are separated by 48px and
 a heading, not by boxes. Lists are hairline-divided rows; tables scroll horizontally on phones
 rather than collapsing into cards. Header actions sit beside the title from 1024px and below it on
-smaller screens.
+smaller screens. The account bar spans the full width with the same gutters.
+
+**The workspace exception.** The document review workspace (`/{lang}/projects/[id]`) widens to
+90rem from 1280px, so the rendered PDF stays legible beside the findings list. Every other page
+keeps 64rem.
+
+**Languages.** Every page exists in English and Romanian under `/{lang}/...`; the account bar
+switches between them with plain links (`hrefLang`, the current one marked `aria-current`).
+Strings live in `web/src/i18n/dictionaries/`; the developer page `/status` stays English.
+
+Paragraphs wrap with `text-wrap: pretty`, so no word is left alone on a last line.
 
 ## Elevation & Depth
 
@@ -130,12 +146,21 @@ sections; a panel, when unavoidable, uses Shelf with 8px corners and no border p
 
 ### Buttons
 - **Primary:** Ledger Blue fill, on-accent text, 6px corners, 8px 16px padding, semibold label
-  that names the action ("Run AI check", not "Submit").
+  that names the action ("Run AI check", not "Submit"). One per view.
+- **Secondary:** Rule Strong outline, Ink text, same size as primary; Shelf fill on hover. For a
+  second action beside the primary one (Submit for review, Upload PDFs).
 - **Quiet:** no fill, Ink 2 text, 6px corners, 6px 10px padding; Surface 2 fill and Ink text on
   hover. For actions around the work rather than in it, such as Sign out in the account bar.
 - **Hover / Focus:** darker blue in 150ms; 2px blue focus ring offset 2px.
 - **Loading / Disabled:** label changes to the running action ("Checking…"), 70% opacity,
   `cursor: progress`.
+
+### Forms
+Label above the control (500, 0.875rem), "(required)" in Ink Faint after required labels, hint
+and inline error below in 0.875rem; Rule Strong borders, 6px corners, Bad border when invalid.
+Errors keep the input and name the fix. Irreversible actions (submit, delete) confirm inline with
+a sentence and two buttons, never a modal. File uploads use a secondary button over a hidden
+input; each file's outcome is listed below it.
 
 ### Status rows
 Dot, name, detail, status word. The detail teaches the next step when something is wrong
@@ -165,6 +190,12 @@ A two-pane ledger split:
 **Jump to location.** Clicking a row in the left list scrolls the viewer smoothly to the exact
 page and highlight anchor (`#finding-{id}`) and moves focus there. The passage is highlighted and
 its reason and recommendation appear inline.
+
+**Highlights.** Boxes over the rendered page tint the passage with `bad` at 25% or `warn` at 30%;
+the active one adds a 2px outline in its state colour and an inline note (Paper, Rule Strong
+border, 6px corners) below or above the passage. Clicking the active highlight closes the note.
+Findings read by OCR say "Read by OCR" beside their confidence. Below 1024px the panes stack, the
+list first.
 
 ## Do's and Don'ts
 

@@ -12,11 +12,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 The repo-root AGENTS.md applies here too (stack, commands, UI rules, definition of done).
 
-- `src/app/status/` is the stack diagnostics page. `/` redirects there (`next.config.ts`) until
-  the product has a home page: delete the redirect and add `src/app/page.tsx`.
+- Pages live under `src/app/[lang]/` (English and Romanian); `src/proxy.ts` sends addresses
+  without a language to the remembered or the browser's one. `src/app/[lang]/status/` is the
+  stack diagnostics page.
 - Every page and `/api` call requires a signed-in user (`src/proxy.ts`, `src/app/auth/`); see
   `/docs/auth.md`. Read the user on the server from the session cookie, as
-  `src/app/account-bar.tsx` does; tokens never reach Client Components.
+  `src/lib/auth/current-user.ts` does; tokens never reach Client Components.
 - Client Components call FastAPI with `@/lib/api/browser`, everything on the server with
   `@/lib/api/server`. Both are typed from `src/lib/api/schema.d.ts` (`npm run gen:api`).
 - Colours, fonts and radii come from tokens in `src/app/globals.css`, documented in `/DESIGN.md`.

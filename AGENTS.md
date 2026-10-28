@@ -89,6 +89,11 @@ host, run `npm install` in `web/` (editors need it too), or read the same files 
   Tests never call a real provider.
 - Regulation rules are stored per project type with a `verification_scope` of `"client"` or
   `"reviewer"`; the two scopes never share rules.
+- Finding text is bilingual: checks write it through `app/verification/messages.py` (one entry per
+  sentence, in English and Romanian), and the compliance agent asks the model for both.
+- Scanned pages are read by OCR in the background (`app/ocr/`, `app/documents/ocr_jobs.py`,
+  `docs/ocr.md`); tests use `FakeOcrEngine` from `tests/conftest.py` and never need Tesseract,
+  except the one real-Tesseract test that skips without it.
 - Role-based confidence filtering on findings: `client` receives only client-scope findings with
   `confidence >= CLIENT_CONFIDENCE_THRESHOLD` (e.g. `0.85`); `reviewer` receives reviewer-scope
   findings with `confidence >= REVIEWER_CONFIDENCE_THRESHOLD` (e.g. `0.55`).
@@ -112,6 +117,13 @@ host, run `npm install` in `web/` (editors need it too), or read the same files 
 - Tailwind's default palette is switched off. Use the semantic tokens from
   `web/src/app/globals.css` (`bg-surface`, `text-ink-2`, `border-line`, `bg-accent`, `text-bad`).
   New tokens go into `globals.css` and `DESIGN.md` together.
+- Pages live under `web/src/app/[lang]/` (English and Romanian); `src/proxy.ts` adds the language
+  to addresses without one. Every interface string goes into both
+  `web/src/i18n/dictionaries/en.ts` and `ro.ts` (the `Dictionary` type and a test enforce it).
+  Server Components call `getDictionary()`; Client Components get their strings as props.
+  Link with `withLocale(locale, path)`.
+- Shared UI pieces are in `web/src/components/` (buttons and fields in `styles.ts` and
+  `form-field.tsx`, `status-word.tsx`, `document-viewer.tsx`); reuse them before writing new ones.
 - API types come from `npm run gen:api` (`web/src/lib/api/schema.d.ts`). Never hand-write them.
 
 ## Code quality: ponytail rules

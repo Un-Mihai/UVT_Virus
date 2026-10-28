@@ -31,7 +31,11 @@ it("forwards method, path, query and body to API_URL without hop-by-hop headers"
     {
       method: "POST",
       body: "file-bytes",
-      headers: { host: "localhost:3000", "x-team": "blue" },
+      headers: {
+        host: "localhost:3000",
+        expect: "100-continue",
+        "x-team": "blue",
+      },
     },
   );
   const response = await POST(request, {
@@ -43,6 +47,7 @@ it("forwards method, path, query and body to API_URL without hop-by-hop headers"
   expect(String(target)).toBe("http://api:8000/api/documents/a%20b?page=2");
   expect(init?.method).toBe("POST");
   expect(sent.get("host")).toBeNull();
+  expect(sent.get("expect")).toBeNull();
   expect(sent.get("x-team")).toBe("blue");
   expect(response.status).toBe(201);
   // Node's fetch already decompressed the body, so the encoding header must not reach the browser.

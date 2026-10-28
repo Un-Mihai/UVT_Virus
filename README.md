@@ -26,6 +26,11 @@ build stays consistent and free of "AI slop".
   uploaded and highlighted documents are persisted in PostgreSQL.
 - **Highlights-only review.** A list of flagged findings beside the highlighted document; click a
   finding and the viewer jumps to its page and passage.
+- **Scans are read.** Pages without a text layer are read with OCR (Tesseract, Romanian and
+  English) in the background, then checked and highlighted like text pages
+  ([docs/ocr.md](docs/ocr.md)).
+- **English and Romanian.** Every screen, and every finding's reason and recommendation, in both
+  languages; switch on any page.
 - **Retrieval ready.** pgvector for embeddings, with tested patterns in the
   `document-verification` skill.
 - **Agents that follow the same rules.** `AGENTS.md` holds the stack rules and the definition of
@@ -141,8 +146,12 @@ their own when a task matches.
 
 ```text
 api/               FastAPI: app/ai/client.py (the only AI client), app/routes/, migrations/, tests/
-web/               Next.js: src/app/status (diagnostics), src/app/api/[...path] (proxy to the API),
-                   src/app/auth and src/proxy.ts (sign-in)
+                   app/verification/ (agents, checks registry, orchestrator, runner), app/pdf/,
+                   app/ocr/ (scanned pages), app/personal_data/ (CNP detection, HMAC, masking),
+                   app/documents/ (uploads, OCR jobs), app/projects/
+web/               Next.js: src/app/[lang]/ (every page, in English and Romanian: home, projects,
+                   admin/regulations, status), src/app/api/[...path] (proxy to the API),
+                   src/app/auth and src/proxy.ts (sign-in, languages), src/i18n (dictionaries)
 infra/keycloak/    Sign-in realm (users, roles, the web client) and the Azure image
 infra/terraform/   Azure infrastructure, with offline tests
 scripts/           setup.sh, deploy.sh, sync_agents.py

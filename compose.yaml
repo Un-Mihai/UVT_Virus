@@ -41,7 +41,7 @@ services:
         condition: service_healthy
 
   # Sign-in. Admin console: http://localhost:8080/admin (keycloak / keycloak).
-  # App users from infra/keycloak/realm-app.json: reviewer and admin, password "demo".
+  # App users from infra/keycloak/realm-app.json: client, reviewer and admin, password "demo".
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.1
     command: ["start-dev", "--import-realm"]

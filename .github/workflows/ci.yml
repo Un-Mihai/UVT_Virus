@@ -29,6 +29,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
+      # OCR tests read a real scan when Tesseract is installed (the API image has it too).
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-ron
       - run: pipx install poetry==2.5.1
       - run: poetry install --no-root
       - run: poetry run poe check

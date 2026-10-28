@@ -66,10 +66,22 @@ page, and the checks that matter (sums, dates, identifiers) are computed in code
   error reasons and change recommendations.
 - Proposed (confirm): the cost per checked document is measured and shown, from the `ai_calls`
   ledger.
-- Proposed (confirm): personal data such as CNPs and private persons' IBANs is masked before it
-  reaches a model unless the check needs it.
-- Open decision: which document types and which checks the demo covers.
+- Decided: CNPs are masked before any text reaches a model (a stable placeholder per person). They
+  are compared across the documents and the form only as keyed hashes (HMAC,
+  `PERSONAL_DATA_HASH_KEY`), and stored and shown only masked. Private persons' IBANs are not
+  masked yet.
+- Decided: people confirm or dismiss each finding, and the decision is stored with who made it and
+  when. Clients decide on client-scope findings, reviewers on reviewer-scope findings.
+- Decided: the document viewer renders the original PDF; the backend returns highlight boxes per
+  finding (`/highlights`) and an annotated PDF (`/annotated`), both keyed by `finding-{id}`.
+- Open decision: which document types and which checks the demo covers. The deterministic checks
+  available to rule sets are listed at `GET /api/checks`.
 - Open decision: whether reviewers can correct an extracted value and re-run the checks.
+- Decided: scanned pages are read by OCR (Tesseract with the Romanian pack, in the API image)
+  right after upload, and checked like text pages (docs/ocr.md). Pages OCR cannot read are
+  flagged as unchecked.
+- Decided: a finding whose evidence was read by OCR is at most as certain as its least certain
+  highlighted word, and is labelled "Read by OCR". Shaky readings reach reviewers but not clients.
 
 ## Evidence on Hand
 
@@ -88,6 +100,9 @@ Proposed; confirm or rewrite as a team.
 
 ## Accessibility & Inclusion
 
-Open decision: interface language (Romanian, English or both). Proposed baseline: WCAG 2.2 AA
-contrast, every status conveyed by text and not colour alone, a review flow that works with the
-keyboard only.
+Decided: the interface is in English and Romanian, switchable on every page; the language is
+part of the address (`/en/...`, `/ro/...`) and remembered. Findings carry their reason and
+recommendation in both languages. Quotes stay in the documents' own language.
+
+Proposed baseline: WCAG 2.2 AA contrast, every status conveyed by text and not colour alone, a
+review flow that works with the keyboard only.

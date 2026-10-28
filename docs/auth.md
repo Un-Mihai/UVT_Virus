@@ -8,8 +8,8 @@ can later hand sign-in over to a company directory (below).
 
 | Where | App users | Keycloak admin console |
 |---|---|---|
-| Local | `reviewer` (role reviewer) and `admin` (roles reviewer, admin), password `demo` | http://localhost:8080/admin, `keycloak` / `keycloak` |
-| Azure | The same two users; password from `terraform -chdir=infra/terraform output -raw demo_password` | `<keycloak_url>/admin/`, user `keycloak`, password from `terraform -chdir=infra/terraform output -raw keycloak_admin_password` |
+| Local | `client` (role client), `reviewer` (role reviewer) and `admin` (roles reviewer, admin), password `demo` | http://localhost:8080/admin, `keycloak` / `keycloak` |
+| Azure | The same three users; password from `terraform -chdir=infra/terraform output -raw demo_password` | `<keycloak_url>/admin/`, user `keycloak`, password from `terraform -chdir=infra/terraform output -raw keycloak_admin_password` |
 
 Users, roles and the web app's client are defined in `infra/keycloak/realm-app.json`.
 
@@ -34,19 +34,31 @@ API routes take the user as a parameter, and roles are enforced there, not only 
 buttons:
 
 ```python
-from fastapi import APIRouter, HTTPException, status
+from typing import Annotated
 
-from app.auth import CurrentUser
+from fastapi import APIRouter, Depends
+
+from app.auth import Role, User, require_roles
 
 router = APIRouter(prefix="/api/files", tags=["files"])
+Admin = Annotated[User, Depends(require_roles(Role.ADMIN))]
 
 
 @router.post("/{file_id}/approve")
-async def approve(file_id: int, user: CurrentUser) -> None:
-    if "admin" not in user.roles:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only admins can approve a file.")
-    ...  # user.id is Keycloak's stable user id; store it, not the username
+async def approve(file_id: int, admin: Admin) -> None:
+    ...  # 403 for anyone without the admin role; admin.id is Keycloak's stable user id
 ```
+
+`require_roles(Role.CLIENT, Role.REVIEWER)` lets either role through; a whole router can take it in
+`dependencies=[...]`. Which projects and findings a role sees is decided in one place each:
+`app/projects/access.py` (clients see their own projects, reviewers the submitted ones) and
+`app/verification/scope.py` (the scope and confidence threshold of each role).
+
+| Role | May |
+|---|---|
+| `client` | Create projects, fill in the form, upload documents, submit; run the Client Verification Process and see client-scope findings at or above `CLIENT_CONFIDENCE_THRESHOLD` |
+| `reviewer` | Read submitted projects; run the Reviewer Verification Process and see reviewer-scope findings at or above `REVIEWER_CONFIDENCE_THRESHOLD`; confirm or dismiss them |
+| `admin` | Manage project types, regulation documents and rule sets of both scopes |
 
 A router whose routes all need a user can say so once:
 `APIRouter(prefix="/api/ai", dependencies=[Depends(current_user)])`, as `app/routes/ai.py` does.

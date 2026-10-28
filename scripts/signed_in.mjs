@@ -1,13 +1,15 @@
-// Runs a command against the local app as the signed-in demo reviewer, for tools that cannot sign
+// Runs a command against the local app as a signed-in demo user, for tools that cannot sign
 // in themselves (`impeccable detect` cannot send cookies). It signs in through Keycloak, then
 // serves the app on a free localhost port with that session; arguments that start with the app's
 // URL are pointed at that port.
 // Usage: node scripts/signed_in.mjs http://localhost:3000 <command> [args...]
+// DEMO_USER=client|reviewer|admin picks the account (default reviewer).
 import { spawn } from "node:child_process";
 import http from "node:http";
 import net from "node:net";
 
 const [appUrl, ...command] = process.argv.slice(2);
+const username = process.env.DEMO_USER ?? "reviewer";
 const app = new URL(appUrl);
 const jar = new Map();
 
@@ -61,12 +63,12 @@ await follow(
   await request(action.replaceAll("&amp;", "&"), {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ username: "reviewer", password: "demo" }),
+    body: new URLSearchParams({ username, password: "demo" }),
   }),
 );
 if (!jar.get("app_session")) {
   console.error(
-    "Signing in as reviewer / demo failed. Check the user in Keycloak's admin console.",
+    `Signing in as ${username} / demo failed. Check the user in Keycloak's admin console.`,
   );
   process.exit(1);
 }

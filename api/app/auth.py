@@ -1,3 +1,5 @@
+from collections.abc import Awaitable, Callable
+from enum import StrEnum
 from typing import Annotated, Any, Protocol
 
 import jwt
@@ -7,12 +9,23 @@ from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
 
+class Role(StrEnum):
+    """Realm roles in infra/keycloak/realm-app.json."""
+
+    CLIENT = "client"
+    REVIEWER = "reviewer"
+    ADMIN = "admin"
+
+
 class User(BaseModel):
     id: str
     username: str
     email: str | None
     name: str | None
     roles: list[str]
+
+    def has_role(self, role: Role) -> bool:
+        return role in self.roles
 
 
 class SigningKeys(Protocol):
@@ -79,3 +92,15 @@ async def current_user(
 
 
 CurrentUser = Annotated[User, Depends(current_user)]
+
+
+def require_roles(*allowed: Role) -> Callable[[User], Awaitable[User]]:
+    """Dependency that lets through users holding at least one of `allowed`; others get 403."""
+
+    async def dependency(user: CurrentUser) -> User:
+        if not any(user.has_role(role) for role in allowed):
+            names = ", ".join(allowed)
+            raise HTTPException(status.HTTP_403_FORBIDDEN, f"This needs one of the roles: {names}.")
+        return user
+
+    return dependency

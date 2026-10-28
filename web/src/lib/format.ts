@@ -33,3 +33,23 @@ export function formatDuration(milliseconds: number): string {
 export function formatClockUtc(iso: string): string {
   return `${clock.format(new Date(iso))} UTC`;
 }
+
+// Product dates show Romanian wall-clock time: the applicants and reviewers work there.
+const TIME_ZONE = "Europe/Bucharest";
+
+/** "92%" (en) or "92 %" (ro); confidence values are 0 to 1. */
+export function formatPercent(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
+    style: "percent",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+/** "28 Oct 2026, 14:05" (en) or "28 oct. 2026, 14:05" (ro), in Bucharest time. */
+export function formatDateTime(iso: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: TIME_ZONE,
+  }).format(new Date(iso));
+}

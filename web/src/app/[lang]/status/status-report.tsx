@@ -12,16 +12,18 @@ import {
 type Health = components["schemas"]["Health"];
 type Usage = components["schemas"]["Usage"];
 type User = components["schemas"]["User"];
+type Ocr = components["schemas"]["OcrStatusOut"];
 type State = "ok" | "warn" | "bad";
 
 const apiUrl = process.env.API_URL ?? "http://localhost:8000";
 
 async function load() {
   try {
-    const [health, usage, me] = await Promise.all([
+    const [health, usage, me, ocr] = await Promise.all([
       api.GET("/health"),
       api.GET("/api/ai/usage"),
       api.GET("/api/me"),
+      api.GET("/api/ocr/status"),
     ]);
     return {
       reachable: true,
@@ -29,6 +31,7 @@ async function load() {
       usage: usage.data ?? null,
       me: me.data ?? null,
       meStatus: me.response.status,
+      ocr: ocr.data ?? null,
     };
   } catch {
     return {
@@ -37,12 +40,13 @@ async function load() {
       usage: null,
       me: null,
       meStatus: 0,
+      ocr: null,
     };
   }
 }
 
 export async function StatusReport() {
-  const { reachable, health, usage, me, meStatus } = await load();
+  const { reachable, health, usage, me, meStatus, ocr } = await load();
 
   return (
     <>
@@ -68,6 +72,7 @@ export async function StatusReport() {
           </ServiceRow>
           <DatabaseRow reachable={reachable} health={health} />
           <AiRow usage={usage} />
+          <OcrRow ocr={ocr} />
         </ul>
       </Section>
       {usage && <Spend usage={usage} />}
@@ -113,6 +118,32 @@ function SignInRow({
           the web app and the API.
         </>
       )}
+    </ServiceRow>
+  );
+}
+
+function OcrRow({ ocr }: { ocr: Ocr | null }) {
+  if (!ocr) {
+    return (
+      <ServiceRow name="OCR" state="warn" status="Unknown">
+        Checked through the API, which is not answering.
+      </ServiceRow>
+    );
+  }
+  if (!ocr.available) {
+    return (
+      <ServiceRow
+        name="OCR"
+        state={ocr.engine === "none" ? "warn" : "bad"}
+        status={ocr.engine === "none" ? "Off" : "Not working"}
+      >
+        Scanned pages are not read. {ocr.detail}
+      </ServiceRow>
+    );
+  }
+  return (
+    <ServiceRow name="OCR" state="ok" status="Ready">
+      {ocr.version} · languages <code>{ocr.languages.join(", ")}</code>
     </ServiceRow>
   );
 }

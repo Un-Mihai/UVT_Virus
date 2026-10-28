@@ -12,6 +12,8 @@ const HOP_BY_HOP = [
   "keep-alive",
   "transfer-encoding",
   "content-length",
+  // curl and others send "Expect: 100-continue" with large uploads; Node's fetch refuses it.
+  "expect",
 ];
 
 async function forward(

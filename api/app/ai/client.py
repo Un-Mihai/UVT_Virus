@@ -12,6 +12,7 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.ai.providers import resolve_accounts
 from app.config import Settings
 from app.models import AiCall
 
@@ -43,6 +44,8 @@ class AIResponseError(RuntimeError):
 class Provider:
     name: str
     client: AsyncOpenAI
+    chat_model: str
+    embeddings: bool
 
 
 class AIClient:
@@ -60,20 +63,29 @@ class AIClient:
     ) -> None:
         self.settings = settings
         self._sessions = sessions
-        self.providers: list[Provider] = []
-        accounts = [
-            ("primary", settings.ai_base_url, settings.ai_api_key),
-            ("fallback", settings.ai_fallback_base_url, settings.ai_fallback_api_key),
-        ]
-        for name, base_url, api_key in accounts:
-            if base_url and api_key:
-                client = AsyncOpenAI(
-                    base_url=base_url,
-                    api_key=api_key.get_secret_value(),
+        self.providers = [
+            Provider(
+                account.name,
+                AsyncOpenAI(
+                    base_url=account.base_url,
+                    api_key=account.api_key.get_secret_value(),
                     timeout=settings.ai_timeout_seconds,
                     http_client=http_client,
-                )
-                self.providers.append(Provider(name, client))
+                ),
+                account.chat_model,
+                account.embeddings,
+            )
+            for account in resolve_accounts(settings)
+        ]
+
+    @property
+    def chat_model(self) -> str:
+        """The model the first account answers with (Bedrock names its own)."""
+        return self.providers[0].chat_model if self.providers else self.settings.ai_chat_model
+
+    @property
+    def embedding_providers(self) -> list[Provider]:
+        return [provider for provider in self.providers if provider.embeddings]
 
     async def close(self) -> None:
         for provider in self.providers:
@@ -87,11 +99,10 @@ class AIClient:
         schema: type[T],
     ) -> T:
         """Chat completion whose answer is validated against `schema` (JSON Schema mode)."""
-        model = self.settings.ai_chat_model
 
-        async def request(client: AsyncOpenAI) -> ParsedChatCompletion[T]:
-            return await client.chat.completions.parse(
-                model=model, messages=list(messages), response_format=schema
+        async def request(provider: Provider) -> ParsedChatCompletion[T]:
+            return await provider.client.chat.completions.parse(
+                model=provider.chat_model, messages=list(messages), response_format=schema
             )
 
         def tokens(completion: ParsedChatCompletion[T]) -> tuple[int, int]:
@@ -100,7 +111,8 @@ class AIClient:
 
         completion = await self._run(
             purpose,
-            model,
+            self.providers,
+            lambda provider: provider.chat_model,
             request,
             tokens,
             self.settings.ai_price_input_per_mtok,
@@ -113,15 +125,20 @@ class AIClient:
 
     async def embed(self, *, purpose: str, texts: Sequence[str]) -> list[list[float]]:
         model = self.settings.ai_embedding_model
+        if self.providers and not self.embedding_providers:
+            raise AINotConfiguredError(
+                "The selected AI provider has no embeddings endpoint; set AI_FALLBACK_* to one."
+            )
 
-        async def request(client: AsyncOpenAI) -> CreateEmbeddingResponse:
-            return await client.embeddings.create(
+        async def request(provider: Provider) -> CreateEmbeddingResponse:
+            return await provider.client.embeddings.create(
                 model=model, input=list(texts), dimensions=self.settings.ai_embedding_dimensions
             )
 
         response = await self._run(
             purpose,
-            model,
+            self.embedding_providers,
+            lambda _: model,
             request,
             lambda response: (response.usage.prompt_tokens, 0),
             self.settings.ai_price_embedding_per_mtok,
@@ -141,14 +158,17 @@ class AIClient:
     async def _run[R](
         self,
         purpose: str,
-        model: str,
-        request: Callable[[AsyncOpenAI], Awaitable[R]],
+        providers: Sequence[Provider],
+        model_of: Callable[[Provider], str],
+        request: Callable[[Provider], Awaitable[R]],
         tokens: Callable[[R], tuple[int, int]],
         input_price: Decimal,
         output_price: Decimal,
     ) -> R:
-        if not self.providers:
-            raise AINotConfiguredError("Set AI_BASE_URL and AI_API_KEY to call an AI provider.")
+        if not providers:
+            raise AINotConfiguredError(
+                "Set AI_PROVIDER and its base URL and key in .env to call an AI provider."
+            )
         budget = self.settings.ai_daily_budget_usd
         # shortcut: checked before the call, so parallel calls can overshoot by a few calls;
         # fine for a daily cap, use a row lock if the budget must be exact.
@@ -160,16 +180,17 @@ class AIClient:
         def cost(used: tuple[int, int]) -> Decimal:
             return (used[0] * input_price + used[1] * output_price) / MILLION
 
-        for provider in self.providers:
+        for provider in providers:
+            model = model_of(provider)
             started = time.perf_counter()
             try:
-                response = await request(provider.client)
+                response = await request(provider)
             except openai.APIError as error:
                 failure = f"{type(error).__name__}: {error.message}"
                 await self._record(
                     purpose, provider.name, model, (0, 0), Decimal(0), started, failure
                 )
-                if isinstance(error, FAILOVER_ERRORS) and provider is not self.providers[-1]:
+                if isinstance(error, FAILOVER_ERRORS) and provider is not providers[-1]:
                     continue
                 raise
             except (openai.LengthFinishReasonError, openai.ContentFilterFinishReasonError) as error:

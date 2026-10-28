@@ -12,8 +12,9 @@
   "ssoSessionMaxLifespan": 43200,
   "roles": {
     "realm": [
-      { "name": "reviewer", "description": "Uses the product. What each role may do is an open decision in PRODUCT.md" },
-      { "name": "admin", "description": "Manages the product" }
+      { "name": "client", "description": "Applies for funding: fills in the form, uploads documents, runs the Client Verification Process" },
+      { "name": "reviewer", "description": "Verifies submitted projects through the Reviewer Verification Process" },
+      { "name": "admin", "description": "Manages project types, regulation documents and rule sets for both scopes" }
     ]
   },
   "clients": [
@@ -50,6 +51,16 @@
     }
   ],
   "users": [
+    {
+      "username": "client",
+      "email": "client@example.com",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Client",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KC_DEMO_PASSWORD}", "temporary": false }],
+      "realmRoles": ["client"]
+    },
     {
       "username": "reviewer",
       "email": "reviewer@example.com",

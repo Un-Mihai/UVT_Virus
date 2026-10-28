@@ -18,7 +18,9 @@ export function ConnectionCheck() {
       if (data) {
         setOutcome({
           ok: true,
-          text: `${data.chat_model} answered and ${data.embedding_model} returned ${data.embedding_dimensions} dimensions.`,
+          text: data.embedding_model
+            ? `${data.chat_model} answered and ${data.embedding_model} returned ${data.embedding_dimensions} dimensions.`
+            : `${data.chat_model} answered. This provider has no embeddings endpoint, so no embedding was checked.`,
         });
       } else {
         setOutcome({

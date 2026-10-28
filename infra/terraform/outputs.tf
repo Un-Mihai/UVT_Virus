@@ -4,7 +4,7 @@ output "web_url" {
 }
 
 output "demo_password" {
-  description = "Password of the reviewer and admin demo accounts, for the team and the jury: terraform output -raw demo_password"
+  description = "Password of the client, reviewer and admin demo accounts, for the team and the jury: terraform output -raw demo_password"
   value       = random_password.demo_users.result
   sensitive   = true
 }

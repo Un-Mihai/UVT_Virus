@@ -80,3 +80,51 @@ def test_answer_that_breaks_the_schema_is_logged(make_client: MakeClient) -> Non
     assert response.status_code == 502
     assert response.json()["detail"] == "The model's answer did not match the expected structure."
     assert call["error"].startswith("ValidationError")
+
+
+def test_azure_provider_uses_its_own_endpoint(make_client: MakeClient) -> None:
+    provider = FakeProvider()
+    client = make_client(
+        provider,
+        ai_provider="azure",
+        azure_ai_base_url="https://azure.test/openai/v1/",
+        azure_ai_api_key="azure-key",
+        ai_fallback_api_key=None,
+    )
+
+    assert client.post("/api/ai/check").status_code == 200
+    assert set(provider.hosts) == {"azure.test"}
+    assert client.get("/api/ai/usage").json()["providers"] == ["azure"]
+
+
+def test_bedrock_answers_with_its_model_and_skips_embeddings(make_client: MakeClient) -> None:
+    provider = FakeProvider()
+    client = make_client(
+        provider,
+        ai_provider="bedrock",
+        bedrock_base_url="https://bedrock.test/openai/v1",
+        bedrock_api_key="bedrock-key",
+        bedrock_model="bedrock-chat",
+        ai_fallback_api_key=None,
+    )
+
+    check = client.post("/api/ai/check").json()
+
+    assert (check["chat_model"], check["embedding_model"]) == ("bedrock-chat", None)
+    assert provider.hosts == ["bedrock.test"]
+    assert provider.bodies[0]["model"] == "bedrock-chat"
+
+
+def test_embeddings_go_to_the_fallback_when_bedrock_is_primary(make_client: MakeClient) -> None:
+    provider = FakeProvider()
+    client = make_client(
+        provider,
+        ai_provider="bedrock",
+        bedrock_base_url="https://bedrock.test/openai/v1",
+        bedrock_api_key="bedrock-key",
+    )
+
+    check = client.post("/api/ai/check").json()
+
+    assert check["embedding_dimensions"] == 8
+    assert provider.hosts == ["bedrock.test", "fallback.test"]

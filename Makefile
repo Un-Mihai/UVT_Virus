@@ -6,8 +6,9 @@ compose := docker compose
 WEB_PORT ?= 3000
 app := http://localhost:$(WEB_PORT)
 # Pages the UI scan renders, signed in as the demo reviewer; add your product's routes:
-# make check-ui UI_URLS="http://localhost:3000/status http://localhost:3000/files"
-UI_URLS ?= $(app)/status
+# DEMO_USER=admin make check-ui UI_URLS="http://localhost:3000/en/admin/regulations?type=1"
+# (no & in the URLs: the shell would read it). Set IMPECCABLE_BROWSER if Chrome is not installed.
+UI_URLS ?= $(app)/en $(app)/en/status
 # Tools that scripts/setup.sh installs on Linux and WSL live here.
 export PATH := $(HOME)/.local/bin:$(PATH)
 # Commands that write files run as you, so Linux and WSL hosts do not get root-owned files.

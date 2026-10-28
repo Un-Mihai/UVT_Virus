@@ -48,7 +48,7 @@ resource "random_password" "keycloak_admin" {
   special = false
 }
 
-# The reviewer and admin demo accounts sign in with it: the team and the jury.
+# The client, reviewer and admin demo accounts sign in with it: the team and the jury.
 resource "random_password" "demo_users" {
   length  = 16
   special = false

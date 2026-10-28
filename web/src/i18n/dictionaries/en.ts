@@ -1,0 +1,311 @@
+// English interface strings. ro.ts has the same keys (the Dictionary type enforces it).
+// Placeholders in braces are filled by fill() or plural() from src/i18n/template.ts.
+
+export const en = {
+  app: {
+    name: "Document checks",
+    description:
+      "Check funding applications against their regulation, with the evidence behind every finding.",
+  },
+  nav: {
+    label: "Main navigation",
+    home: "Home",
+    regulations: "Regulations",
+    status: "Stack status",
+    signOut: "Sign out",
+    language: "Language",
+  },
+  roles: {
+    client: "Applicant",
+    reviewer: "Reviewer",
+    admin: "Administrator",
+  },
+  notFound: {
+    title: "Page not found",
+    body: "The address may be mistyped, or your account cannot open this project.",
+    home: "Go to the start page",
+  },
+  common: {
+    apiUnreachable:
+      "The API did not answer. Reload the page in a minute; if it keeps failing, open Stack status.",
+    // English has no "few" form; it repeats "other" so both languages share one shape.
+    pages: {
+      one: "{count} page",
+      few: "{count} pages",
+      other: "{count} pages",
+    },
+    page: "Page {page}",
+  },
+  errors: {
+    400: "The request was not accepted. Check the values and try again.",
+    401: "Your session ended. Sign in again, then repeat the action.",
+    403: "Your role does not allow this action.",
+    404: "This no longer exists, or your account cannot open it. Reload the page.",
+    409: "This is not possible in the project's current state. Reload the page.",
+    413: "The file is larger than the upload limit. Compress or split the PDF.",
+    415: "Only PDF files can be uploaded.",
+    422: "Some values are not valid. Correct the marked fields.",
+    429: "The daily AI budget is used up. Try again tomorrow or ask an administrator.",
+    502: "The AI provider failed. Try again in a minute.",
+    503: "A service the check needs is not set up. An administrator can see which on Stack status.",
+    network:
+      "The request did not reach the server. Check your connection and try again.",
+    other: "Something went wrong (status {status}). Try again.",
+  },
+  projectStatus: {
+    draft: "Draft",
+    submitted: "Submitted",
+  },
+  severity: {
+    bad: "Error",
+    warn: "Check",
+  },
+  scopes: {
+    client: "Client verification rules",
+    reviewer: "Reviewer verification rules",
+  },
+  documentTypes: {
+    financing_application: "Financing application",
+    contract: "Contract",
+    offer: "Offer",
+    invoice: "Invoice",
+    budget: "Budget",
+    guarantee: "Guarantee",
+    certificate: "Certificate",
+    statement: "Statement",
+    other: "Other document",
+  },
+  form: {
+    required: "required",
+    invalid: "Check this value.",
+    cancel: "Cancel",
+  },
+  application: {
+    newTitle: "New application",
+    newLead:
+      "Fill in what the application form asks. You upload the documents on the next page.",
+    editTitle: "Edit application",
+    editLead: "The changes apply to the next check you run.",
+    onlyClients:
+      "Only applicants can start or change an application. Sign in with an applicant account.",
+    notEditable:
+      "This application was submitted, so it can no longer be changed.",
+    noTypes:
+      "There is no project type to apply for yet. An administrator has to create one first.",
+    projectType: "Project type",
+    title: "Project title",
+    titleHint: "How you and the reviewers will recognise it.",
+    applicantName: "Applicant",
+    applicantNameHint:
+      "The company or institution, as on its registration certificate.",
+    applicantCui: "Applicant's CUI",
+    applicantCuiHint: "With or without RO, for example RO 361820.",
+    representativeName: "Legal representative",
+    representativeCnp: "Legal representative's CNP",
+    representativeCnpHint:
+      "Kept only as a keyed hash and shown masked; the documents are compared with it.",
+    representativeCnpKeep:
+      "Leave it empty to keep the CNP already given ({masked}).",
+    requestedAmount: "Requested amount (lei)",
+    requestedAmountHint: "As written in the budget, for example 1.250.000,00.",
+    iban: "IBAN",
+    ibanHint: "The account the funds would go to.",
+    startDate: "Project start",
+    endDate: "Project end",
+    dateHint: "DD.MM.YYYY",
+    create: "Create application",
+    creating: "Creating…",
+    save: "Save changes",
+    saving: "Saving…",
+  },
+  workspace: {
+    loading: "Loading the project…",
+    typeAndStatus: "{type} · {status}",
+    runCheck: "Run the check",
+    runningCheck: "Checking…",
+    runConflict:
+      "The check cannot start yet: another check is running, or scanned pages are still being read.",
+    submit: "Submit for review",
+    submitConfirm:
+      "After you submit, the documents and the form can no longer change. Submit now?",
+    submitYes: "Yes, submit",
+    submitting: "Submitting…",
+    submitConflict: "Upload at least one document before you submit.",
+    edit: "Edit application",
+    clientCheck: "Client verification",
+    reviewerCheck: "Reviewer verification",
+    neverRun:
+      "No check has run yet. Run it to see each finding next to its place in the documents.",
+    running:
+      "The check is running. Findings appear here as soon as it finishes.",
+    failed:
+      "The last check failed. Run it again; if it keeps failing, an administrator can look at Stack status.",
+    lastRun: "Last check {date}.",
+    readingBlocks:
+      "Scanned pages are still being read. The check can start when they are done.",
+    details: "Application details",
+    notGiven: "Not given",
+  },
+  documents: {
+    title: "Documents",
+    empty:
+      "No document yet. Upload the PDFs of this application; scanned pages are read automatically.",
+    emptyReviewer: "The applicant has not uploaded any document.",
+    upload: "Upload PDFs",
+    uploadHint:
+      "PDF only, up to 25 MB each. Pages without a text layer are read with OCR.",
+    uploading: "Uploading {name}…",
+    uploaded: "{name} uploaded.",
+    failedUpload: "{name} was not uploaded: {reason}",
+    pages: {
+      one: "{count} page",
+      few: "{count} pages",
+      other: "{count} pages",
+    },
+    reading: "Reading scanned pages: {done} of {total}",
+    readByOcr: {
+      one: "{count} scanned page read by OCR",
+      few: "{count} scanned pages read by OCR",
+      other: "{count} scanned pages read by OCR",
+    },
+    unreadable: {
+      one: "{count} page could not be read",
+      few: "{count} pages could not be read",
+      other: "{count} pages could not be read",
+    },
+    stalled: "Reading the scans stopped.",
+    readAgain: "Read again",
+    readingAgain: "Starting…",
+    download: "Original",
+    remove: "Delete",
+    removing: "Deleting…",
+    removeConfirm: "Delete {name}?",
+  },
+  review: {
+    title: "Findings",
+    summary: {
+      one: "{count} finding at or above {threshold} confidence.",
+      few: "{count} findings at or above {threshold} confidence.",
+      other: "{count} findings at or above {threshold} confidence.",
+    },
+    none: "No findings at or above {threshold} confidence for these rules.",
+    noDocuments: "Upload a document to see it here.",
+    confidence: "{value} confidence",
+    readByOcr: "Read by OCR",
+    location: "{document}, page {page}",
+    noLocation: "Whole application",
+    recommendation: "Recommendation:",
+    showInDocument: "Show in document",
+    confirm: "Confirm",
+    dismiss: "Dismiss",
+    undo: "Undo",
+    confirmed: "Confirmed",
+    dismissed: "Dismissed",
+    deciding: "Saving…",
+    viewer: "Document",
+    annotated: "Download with highlights",
+    loadingDocument: "Loading the document…",
+    documentFailed:
+      "The document could not be shown. Download the original and open it in a PDF reader.",
+  },
+  admin: {
+    title: "Regulations",
+    lead: "Pick a project type, then edit its client or its reviewer rule set. The two never share rules.",
+    onlyAdmins: "Only administrators manage regulations.",
+    types: "Project types",
+    noTypes:
+      "There is no project type yet. Create the first one; applicants choose it when they apply.",
+    newType: "New project type",
+    code: "Code",
+    codeHint: "Short and stable, for example infra-2026; it never changes.",
+    name: "Name",
+    description: "Description",
+    createType: "Create project type",
+    creatingType: "Creating…",
+    active: "Active",
+    inactive: "Inactive",
+    activate: "Activate",
+    deactivate: "Deactivate",
+    rules: "Rules",
+    noRules:
+      "This rule set has no rules yet. Add one below; a check without rules finds nothing.",
+    rule: "Rule",
+    kind: "Kind",
+    severity: "Severity",
+    status: "Status",
+    kinds: { check: "Code check", ai: "AI-judged clause" },
+    newRule: "Add a rule",
+    ruleCode: "Rule code",
+    ruleCodeHint: "Unique in this rule set, for example C-CUI.",
+    ruleTitle: "Title",
+    check: "Check",
+    clause: "Clause the AI judges",
+    clauseHint:
+      "The regulation's requirement in plain words, for example: the performance guarantee is at least 10% of the contract value.",
+    params: "Settings of the check",
+    listHint: "Separate values with commas.",
+    addRule: "Add rule",
+    addingRule: "Adding…",
+    edit: "Edit",
+    save: "Save",
+    saving: "Saving…",
+    remove: "Delete",
+    removing: "Deleting…",
+    removeRuleConfirm: "Delete rule {code}?",
+    documents: "Regulation documents",
+    noDocuments:
+      "No regulation document for this rule set. Upload the regulation so AI-judged clauses can quote it.",
+    uploadDocument: "Upload regulation PDF",
+    uploading: "Uploading…",
+    readAgain: "Read again",
+    readingAgain: "Starting…",
+    uploadedAt: "Uploaded {date}",
+    ocrReading: "Reading scanned pages…",
+    ocrDone: "Scanned pages read by OCR",
+    ocrFailed: "Some scanned pages could not be read",
+    ocrUnavailable: "OCR is off: scanned pages are not read",
+    activeRule: "Active: used in the next checks",
+    duplicateRule: "This rule set already has a rule with that code.",
+    duplicateType: "A project type with that code already exists.",
+    paramLabels: {
+      document_types: "Required document types",
+      tolerance: "Rounding allowed",
+      label_contains: "Date label contains",
+      document_type: "Document type with the total",
+    },
+  },
+  home: {
+    lead: "Applications, reviews and regulations, depending on your role.",
+    loading: "Loading your work…",
+    noRole:
+      "Your account has no role in this application yet. Ask an administrator to give you the applicant, reviewer or administrator role.",
+    client: {
+      title: "Your applications",
+      newApplication: "New application",
+      empty:
+        "You have not started an application yet. Start one, upload its documents and run the check before you submit it.",
+      title_column: "Title",
+      type_column: "Project type",
+      status_column: "Status",
+      created_column: "Started",
+    },
+    reviewer: {
+      title: "Submitted projects",
+      empty:
+        "No project has been submitted yet. Projects appear here as soon as an applicant submits one.",
+      title_column: "Title",
+      type_column: "Project type",
+      submitted_column: "Submitted",
+    },
+    admin: {
+      title: "Project types",
+      lead: "Each project type has its own client and reviewer rule sets.",
+      empty:
+        "There is no project type yet. Create one in the regulation editor before applicants can apply.",
+      editRegulations: "Edit regulations",
+      inactive: "Inactive",
+    },
+  },
+};
+
+export type Dictionary = typeof en;
