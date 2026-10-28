@@ -6,36 +6,41 @@
  * colors exist: bg-surface, text-ink-2, border-line, bg-accent, text-bad...
  */
 :root {
-  --surface: oklch(0.985 0.004 95);
-  --surface-2: oklch(0.962 0.006 95);
-  --ink: oklch(0.24 0.014 255);
-  --ink-2: oklch(0.43 0.014 255);
-  --ink-3: oklch(0.53 0.012 255);
-  --line: oklch(0.9 0.006 95);
-  --line-strong: oklch(0.8 0.008 95);
-  --accent: oklch(0.46 0.13 258);
-  --accent-hover: oklch(0.4 0.13 258);
-  --on-accent: oklch(0.985 0.004 95);
-  --ok: oklch(0.5 0.12 155);
-  --warn: oklch(0.56 0.12 70);
-  --bad: oklch(0.52 0.18 27);
+  --canvas: #f5f5f5;
+  --surface: #ffffff;
+  --surface-2: #f1f2f3;
+  --ink: #141414;
+  --ink-2: #525252;
+  --ink-3: #696969;
+  --line: #e5e5e5;
+  --line-strong: #b4b4b4;
+  --accent: #ffed00;
+  --accent-hover: #edda00;
+  --on-accent: #141414;
+  --focus: #756900;
+  --ok: #227346;
+  --warn: #8a5800;
+  --bad: #be3030;
+  --elevation-card: 0 4px 24px -8px rgb(0 0 0 / 10%);
+  --elevation-action: 0 3px 8px -3px rgb(0 0 0 / 22%);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --surface: oklch(0.2 0.012 255);
-    --surface-2: oklch(0.24 0.013 255);
-    --ink: oklch(0.94 0.006 95);
-    --ink-2: oklch(0.78 0.01 255);
-    --ink-3: oklch(0.68 0.01 255);
-    --line: oklch(0.32 0.012 255);
-    --line-strong: oklch(0.42 0.012 255);
-    --accent: oklch(0.72 0.12 258);
-    --accent-hover: oklch(0.78 0.11 258);
-    --on-accent: oklch(0.2 0.012 255);
-    --ok: oklch(0.74 0.13 155);
-    --warn: oklch(0.8 0.12 75);
-    --bad: oklch(0.72 0.15 27);
+    --canvas: #101010;
+    --surface: #1b1b1b;
+    --surface-2: #252525;
+    --ink: #fafafa;
+    --ink-2: #c2c2c2;
+    --ink-3: #a3a3a3;
+    --line: #333333;
+    --line-strong: #606060;
+    --focus: #ffed00;
+    --ok: #79d29c;
+    --warn: #edc16a;
+    --bad: #ff9292;
+    --elevation-card: 0 4px 24px -8px rgb(0 0 0 / 35%);
+    --elevation-action: 0 3px 8px -3px rgb(0 0 0 / 45%);
   }
 }
 
@@ -44,9 +49,12 @@
   --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
   /* taste-skill-ignore: only <code> uses mono (identifiers, URLs, model names) */
   --font-mono: var(--font-atkinson-mono), ui-monospace, monospace;
+  --radius-control: 10px;
+  --radius-panel: 12px;
 }
 
 @theme inline {
+  --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-ink: var(--ink);
@@ -57,9 +65,12 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-on-accent: var(--on-accent);
+  --color-focus: var(--focus);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-bad: var(--bad);
+  --shadow-card: var(--elevation-card);
+  --shadow-action: var(--elevation-action);
 }
 
 @layer base {
@@ -69,18 +80,20 @@
   }
 
   body {
-    background: var(--surface);
+    background: var(--canvas);
     color: var(--ink);
-    caret-color: var(--accent);
+    caret-color: var(--ink);
+    line-height: 1.6;
   }
 
   ::selection {
-    background: color-mix(in oklch, var(--accent) 24%, transparent);
+    background: var(--accent);
+    color: var(--on-accent);
   }
 
   :focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
   }
 
   a {
@@ -95,5 +108,126 @@
   code {
     font-family: var(--font-mono);
     font-size: 0.92em;
+  }
+
+  button:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* The Turbopack Tailwind loader omits custom component layers; keep these rules unlayered. */
+.account-bar {
+  color-scheme: dark;
+  --surface: #111111;
+  --surface-2: #292929;
+  --ink: #ffffff;
+  --ink-2: #c4c4c4;
+  --ink-3: #aaaaaa;
+  --line: #383838;
+  --line-strong: #606060;
+  --focus: var(--accent);
+  background: var(--surface);
+  color: var(--ink);
+  border-bottom: 3px solid var(--accent);
+}
+
+.brand-link::before {
+  content: "";
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  background: url("/icon.svg") center / contain no-repeat;
+}
+
+.page-header {
+  position: relative;
+}
+
+.page-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3rem;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.panel {
+  min-width: 0;
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  padding: 1.5rem;
+  box-shadow: var(--elevation-card);
+}
+
+.data-table {
+  border-block: 1px solid var(--line);
+}
+
+.data-table thead {
+  background: var(--surface-2);
+}
+
+.data-table th,
+.data-table td {
+  padding-block: 1rem;
+}
+
+.data-table th {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.data-table tr > :first-child {
+  padding-inline-start: 1rem;
+}
+
+.data-table tr > :last-child {
+  padding-inline-end: 1rem;
+}
+
+.data-table tbody tr {
+  transition: background-color 150ms ease-out;
+}
+
+.data-table tbody tr:hover,
+.data-table tbody tr:focus-within {
+  background: var(--surface-2);
+}
+
+.application-details dd {
+  overflow-wrap: anywhere;
+}
+
+.finding-button[aria-current="true"] {
+  box-shadow: inset 0 0 0 1px var(--focus);
+}
+
+.document-page canvas {
+  color-scheme: light;
+  background: #ffffff;
+}
+
+@media (min-width: 640px) {
+  .panel {
+    padding: 2rem;
   }
 }

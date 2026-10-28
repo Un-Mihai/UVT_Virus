@@ -77,10 +77,10 @@ export function DocumentUpload({
   }
 
   return (
-    <div className="mt-6 grid gap-3">
+    <div className="mt-6 grid gap-3 border-t border-line pt-6">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <label
-          className={`${secondaryButton} cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent has-disabled:cursor-progress has-disabled:opacity-70`}
+          className={`${secondaryButton} cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus has-disabled:cursor-progress has-disabled:opacity-70`}
         >
           {uploading ? fill(text.uploading, { name: uploading }) : text.upload}
           <input

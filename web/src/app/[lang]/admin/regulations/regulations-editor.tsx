@@ -23,7 +23,7 @@ type Level =
   | { kind: "project"; id: number };
 
 const tab =
-  "rounded-md px-3 py-1.5 text-sm font-medium text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink aria-[current=page]:bg-surface-2 aria-[current=page]:text-ink";
+  "inline-flex min-h-11 items-center rounded-control px-4 py-2.5 text-sm font-semibold text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink aria-[current=page]:bg-accent aria-[current=page]:text-on-accent";
 
 function levelOf(query: Record<string, string | string[] | undefined>): Level {
   const id = (value: unknown) =>
@@ -114,8 +114,8 @@ export async function RegulationsEditor({
 
   return (
     <>
-      <nav aria-labelledby="levels-title" className="mt-12 grid gap-6">
-        <h2 id="levels-title" className="text-lg font-semibold tracking-tight">
+      <nav aria-labelledby="levels-title" className="panel mt-10 grid gap-6">
+        <h2 id="levels-title" className="text-xl font-bold tracking-tight">
           {text.appliesTo}
         </h2>
         <ul className="flex flex-wrap gap-1">
@@ -195,10 +195,7 @@ export async function RegulationsEditor({
         </div>
       </nav>
       {set && (
-        <section
-          aria-labelledby="level-title"
-          className="mt-12 border-t border-line pt-12"
-        >
+        <section aria-labelledby="level-title" className="panel mt-8">
           <LevelHeading
             level={level}
             name={type?.name ?? project?.title ?? text.everyProject}
@@ -208,7 +205,7 @@ export async function RegulationsEditor({
           />
           <nav
             aria-label={text.scopes}
-            className="mt-8 flex flex-wrap gap-1 border-b border-line pb-3"
+            className="mt-8 flex flex-wrap gap-2 border-b border-line pb-4"
           >
             {SCOPES.map((option) => (
               <Link

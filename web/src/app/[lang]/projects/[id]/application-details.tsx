@@ -23,17 +23,17 @@ export function ApplicationDetails({
     [text.endDate, "end_date"],
   ];
   return (
-    <section className="mt-12" aria-labelledby="details-title">
+    <section className="panel mt-10" aria-labelledby="details-title">
       <h2 id="details-title" className={sectionTitle}>
         {dictionary.workspace.details}
       </h2>
-      <dl className="grid max-w-3xl gap-x-8 gap-y-3 sm:grid-cols-[16rem_1fr]">
+      <dl className="application-details grid max-w-3xl gap-x-8 gap-y-3 sm:grid-cols-[16rem_1fr]">
         {rows.map(([label, key]) => {
           const value = form[key];
           return (
             <Fragment key={key}>
-              <dt className="text-ink-2">{label}</dt>
-              <dd className="tabular-nums">
+              <dt className="text-sm text-ink-2 sm:py-1">{label}</dt>
+              <dd className="min-w-0 pb-3 text-sm font-medium tabular-nums sm:py-1">
                 {typeof value === "string" && value ? (
                   value
                 ) : (

@@ -24,14 +24,17 @@ export function LanguageSwitcher({
   const search = query ? `?${query}` : "";
 
   return (
-    <nav aria-label={label} className="flex items-center gap-1">
+    <nav
+      aria-label={label}
+      className="flex items-center gap-1 rounded-control border border-line p-1"
+    >
       {LOCALES.map((option) =>
         option === locale ? (
           <span
             key={option}
             aria-current="page"
             lang={option}
-            className="rounded-md bg-surface-2 px-2.5 py-1.5 font-medium text-ink"
+            className="inline-flex min-h-8 items-center rounded-md bg-accent px-2.5 py-1 font-semibold text-on-accent"
           >
             {LOCALE_NAMES[option]}
           </span>
@@ -41,7 +44,7 @@ export function LanguageSwitcher({
             href={withLocale(option, path) + search}
             hrefLang={option}
             lang={option}
-            className="rounded-md px-2.5 py-1.5 font-medium text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
+            className="inline-flex min-h-8 items-center rounded-md px-2.5 py-1 font-medium text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
           >
             {LOCALE_NAMES[option]}
           </a>

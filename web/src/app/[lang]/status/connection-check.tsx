@@ -38,7 +38,7 @@ export function ConnectionCheck() {
         type="button"
         onClick={run}
         disabled={pending}
-        className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover disabled:cursor-progress disabled:opacity-70"
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-accent px-5 py-2.5 text-sm font-bold text-on-accent shadow-action transition-colors duration-150 hover:bg-accent-hover active:bg-accent-hover disabled:cursor-progress disabled:opacity-70 disabled:shadow-none"
       >
         {pending ? "Checking…" : "Run AI check"}
       </button>

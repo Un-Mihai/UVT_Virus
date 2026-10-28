@@ -65,7 +65,7 @@ export function NewProjectType({
 
   return (
     <details className="mt-6">
-      <summary className="cursor-pointer rounded-md py-1.5 font-medium text-ink">
+      <summary className="cursor-pointer rounded-control py-2.5 font-semibold text-ink underline decoration-accent decoration-2 underline-offset-4 transition-colors duration-150 hover:text-ink-2">
         {text.newType}
       </summary>
       <form onSubmit={create} className="mt-4 grid gap-4">

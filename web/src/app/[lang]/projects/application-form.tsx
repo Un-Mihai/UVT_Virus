@@ -113,7 +113,7 @@ export function ApplicationForm({
     existing ? `/projects/${existing.projectId}` : "/",
   );
   return (
-    <form onSubmit={submit} className="mt-10 grid max-w-2xl gap-6">
+    <form onSubmit={submit} className="panel mt-10 grid max-w-3xl gap-7">
       {existing ? (
         <p className="text-ink-2">
           {text.projectType}:{" "}
@@ -219,7 +219,7 @@ export function ApplicationForm({
           {problem}
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 border-t border-line pt-6">
         <button type="submit" disabled={pending} className={primaryButton}>
           {existing
             ? pending

@@ -1,0 +1,389 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-28T16:55:04.701983Z",
+  "title": "Design System: Document checks",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "tonalRamp": [
+          "oklch(0.150 0.0000 0.00)",
+          "oklch(0.264 0.0000 0.00)",
+          "oklch(0.379 0.0000 0.00)",
+          "oklch(0.493 0.0000 0.00)",
+          "oklch(0.607 0.0000 0.00)",
+          "oklch(0.721 0.0000 0.00)",
+          "oklch(0.836 0.0000 0.00)",
+          "oklch(0.950 0.0000 0.00)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "White Paper",
+        "tonalRamp": [
+          "oklch(0.150 0.0000 0.00)",
+          "oklch(0.264 0.0000 0.00)",
+          "oklch(0.379 0.0000 0.00)",
+          "oklch(0.493 0.0000 0.00)",
+          "oklch(0.607 0.0000 0.00)",
+          "oklch(0.721 0.0000 0.00)",
+          "oklch(0.836 0.0000 0.00)",
+          "oklch(0.950 0.0000 0.00)"
+        ]
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Soft Gray",
+        "tonalRamp": [
+          "oklch(0.150 0.0017 247.84)",
+          "oklch(0.264 0.0017 247.84)",
+          "oklch(0.379 0.0017 247.84)",
+          "oklch(0.493 0.0017 247.84)",
+          "oklch(0.607 0.0017 247.84)",
+          "oklch(0.721 0.0017 247.84)",
+          "oklch(0.836 0.0017 247.84)",
+          "oklch(0.950 0.0017 247.84)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Deep Ink",
+        "tonalRamp": [
+          "oklch(0.150 0.0000 0.00)",
+          "oklch(0.264 0.0000 0.00)",
+          "oklch(0.379 0.0000 0.00)",
+          "oklch(0.493 0.0000 0.00)",
+          "oklch(0.607 0.0000 0.00)",
+          "oklch(0.721 0.0000 0.00)",
+          "oklch(0.836 0.0000 0.00)",
+          "oklch(0.950 0.0000 0.00)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "tonalRamp": [
+          "oklch(0.150 0.0000 0.00)",
+          "oklch(0.264 0.0000 0.00)",
+          "oklch(0.379 0.0000 0.00)",
+          "oklch(0.493 0.0000 0.00)",
+          "oklch(0.607 0.0000 0.00)",
+          "oklch(0.721 0.0000 0.00)",
+          "oklch(0.836 0.0000 0.00)",
+          "oklch(0.950 0.0000 0.00)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Faint Ink",
+        "tonalRamp": [
+          "oklch(0.150 0.0000 0.00)",
+          "oklch(0.264 0.0000 0.00)",
+          "oklch(0.379 0.0000 0.00)",
+          "oklch(0.493 0.0000 0.00)",
+          "oklch(0.607 0.0000 0.00)",
+          "oklch(0.721 0.0000 0.00)",
+          "oklch(0.836 0.0000 0.00)",
+          "oklch(0.950 0.0000 0.00)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "tonalRamp": [
+          "oklch(0.150 0.0000 0.00)",
+          "oklch(0.264 0.0000 0.00)",
+          "oklch(0.379 0.0000 0.00)",
+          "oklch(0.493 0.0000 0.00)",
+          "oklch(0.607 0.0000 0.00)",
+          "oklch(0.721 0.0000 0.00)",
+          "oklch(0.836 0.0000 0.00)",
+          "oklch(0.950 0.0000 0.00)"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Strong Rule",
+        "tonalRamp": [
+          "oklch(0.150 0.0000 0.00)",
+          "oklch(0.264 0.0000 0.00)",
+          "oklch(0.379 0.0000 0.00)",
+          "oklch(0.493 0.0000 0.00)",
+          "oklch(0.607 0.0000 0.00)",
+          "oklch(0.721 0.0000 0.00)",
+          "oklch(0.836 0.0000 0.00)",
+          "oklch(0.950 0.0000 0.00)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Signal Yellow",
+        "tonalRamp": [
+          "oklch(0.150 0.1966 103.97)",
+          "oklch(0.264 0.1966 103.97)",
+          "oklch(0.379 0.1966 103.97)",
+          "oklch(0.493 0.1966 103.97)",
+          "oklch(0.607 0.1966 103.97)",
+          "oklch(0.721 0.1966 103.97)",
+          "oklch(0.836 0.1966 103.97)",
+          "oklch(0.950 0.1966 103.97)"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Signal Yellow Hover",
+        "tonalRamp": [
+          "oklch(0.150 0.1843 103.12)",
+          "oklch(0.264 0.1843 103.12)",
+          "oklch(0.379 0.1843 103.12)",
+          "oklch(0.493 0.1843 103.12)",
+          "oklch(0.607 0.1843 103.12)",
+          "oklch(0.721 0.1843 103.12)",
+          "oklch(0.836 0.1843 103.12)",
+          "oklch(0.950 0.1843 103.12)"
+        ]
+      },
+      "on-accent": {
+        "role": "neutral",
+        "displayName": "Dark Action Text",
+        "tonalRamp": [
+          "oklch(0.150 0.0000 0.00)",
+          "oklch(0.264 0.0000 0.00)",
+          "oklch(0.379 0.0000 0.00)",
+          "oklch(0.493 0.0000 0.00)",
+          "oklch(0.607 0.0000 0.00)",
+          "oklch(0.721 0.0000 0.00)",
+          "oklch(0.836 0.0000 0.00)",
+          "oklch(0.950 0.0000 0.00)"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus Gold",
+        "tonalRamp": [
+          "oklch(0.150 0.1079 101.54)",
+          "oklch(0.264 0.1079 101.54)",
+          "oklch(0.379 0.1079 101.54)",
+          "oklch(0.493 0.1079 101.54)",
+          "oklch(0.607 0.1079 101.54)",
+          "oklch(0.721 0.1079 101.54)",
+          "oklch(0.836 0.1079 101.54)",
+          "oklch(0.950 0.1079 101.54)"
+        ]
+      },
+      "ok": {
+        "role": "secondary",
+        "displayName": "Verified Green",
+        "tonalRamp": [
+          "oklch(0.150 0.1059 154.78)",
+          "oklch(0.264 0.1059 154.78)",
+          "oklch(0.379 0.1059 154.78)",
+          "oklch(0.493 0.1059 154.78)",
+          "oklch(0.607 0.1059 154.78)",
+          "oklch(0.721 0.1059 154.78)",
+          "oklch(0.836 0.1059 154.78)",
+          "oklch(0.950 0.1059 154.78)"
+        ]
+      },
+      "warn": {
+        "role": "secondary",
+        "displayName": "Warning Amber",
+        "tonalRamp": [
+          "oklch(0.150 0.1082 71.46)",
+          "oklch(0.264 0.1082 71.46)",
+          "oklch(0.379 0.1082 71.46)",
+          "oklch(0.493 0.1082 71.46)",
+          "oklch(0.607 0.1082 71.46)",
+          "oklch(0.721 0.1082 71.46)",
+          "oklch(0.836 0.1082 71.46)",
+          "oklch(0.950 0.1082 71.46)"
+        ]
+      },
+      "bad": {
+        "role": "secondary",
+        "displayName": "Error Red",
+        "tonalRamp": [
+          "oklch(0.150 0.1790 25.75)",
+          "oklch(0.264 0.1790 25.75)",
+          "oklch(0.379 0.1790 25.75)",
+          "oklch(0.493 0.1790 25.75)",
+          "oklch(0.607 0.1790 25.75)",
+          "oklch(0.721 0.1790 25.75)",
+          "oklch(0.836 0.1790 25.75)",
+          "oklch(0.950 0.1790 25.75)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "One page heading below 640px."
+      },
+      "headline-wide": {
+        "displayName": "Wide Headline",
+        "purpose": "Page heading from 640px."
+      },
+      "title": {
+        "displayName": "Section Title",
+        "purpose": "Task and section headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Reading copy and descriptions."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field and table labels."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Identifiers, URLs and model names inside code elements."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "0 4px 24px -8px rgb(0 0 0 / 10%)",
+        "purpose": "Main task panels in light mode."
+      },
+      {
+        "name": "card-dark",
+        "value": "0 4px 24px -8px rgb(0 0 0 / 35%)",
+        "purpose": "Main task panels in system dark mode."
+      },
+      {
+        "name": "action",
+        "value": "0 3px 8px -3px rgb(0 0 0 / 22%)",
+        "purpose": "Primary buttons and active PDF notes in light mode."
+      },
+      {
+        "name": "action-dark",
+        "value": "0 3px 8px -3px rgb(0 0 0 / 45%)",
+        "purpose": "Primary buttons and active PDF notes in system dark mode."
+      }
+    ],
+    "motion": [
+      {
+        "name": "color-transition",
+        "value": "150ms",
+        "purpose": "Interactive color changes on buttons, fields, links, tabs and highlights."
+      },
+      {
+        "name": "table-row-transition",
+        "value": "background-color 150ms ease-out",
+        "purpose": "Table-row hover and focus-within."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Transition and animation duration under prefers-reduced-motion; smooth scrolling becomes automatic."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main task action, with yellow fill and a soft action shadow.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Run check</button>",
+      "css": ".ds-btn-primary{display:inline-flex;min-height:44px;align-items:center;justify-content:center;gap:8px;border:0;border-radius:var(--radius-control,10px);background:var(--accent,#ffed00);color:var(--on-accent,#141414);padding:10px 20px;font-size:14px;font-weight:700;line-height:20px;box-shadow:var(--elevation-action,0 3px 8px -3px rgb(0 0 0 / 22%));cursor:pointer;font-family:var(--font-atkinson,\"Atkinson Hyperlegible Next\"),ui-sans-serif,system-ui,sans-serif;transition-property:color,background-color,border-color;transition-duration:150ms;transition-timing-function:cubic-bezier(.4,0,.2,1);}.ds-btn-primary:hover,.ds-btn-primary:active{background:var(--accent-hover,#edda00)}.ds-btn-primary:focus-visible{outline:2px solid var(--focus,#756900);outline-offset:3px;}.ds-btn-primary:disabled{cursor:progress;opacity:.7;box-shadow:none}@media(prefers-reduced-motion:reduce){.ds-btn-primary{transition-duration:.01ms}}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A second action beside the primary task.",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">Upload PDFs</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;min-height:44px;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line-strong,#b4b4b4);border-radius:var(--radius-control,10px);background:var(--surface,#fff);color:var(--ink,#141414);padding:10px 20px;font-size:14px;font-weight:600;line-height:20px;cursor:pointer;font-family:var(--font-atkinson,\"Atkinson Hyperlegible Next\"),ui-sans-serif,system-ui,sans-serif;transition-property:color,background-color,border-color;transition-duration:150ms;transition-timing-function:cubic-bezier(.4,0,.2,1);}.ds-btn-secondary:hover{border-color:var(--ink,#141414);background:var(--surface-2,#f1f2f3)}.ds-btn-secondary:active{background:var(--surface-2,#f1f2f3)}.ds-btn-secondary:focus-visible{outline:2px solid var(--focus,#756900);outline-offset:3px;}.ds-btn-secondary:disabled{cursor:progress;opacity:.7}@media(prefers-reduced-motion:reduce){.ds-btn-secondary{transition-duration:.01ms}}"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "An action around the work, such as editing or signing out.",
+      "html": "<button class=\"ds-btn-quiet\" type=\"button\">Edit</button>",
+      "css": ".ds-btn-quiet{display:inline-flex;min-height:40px;align-items:center;justify-content:center;border:0;border-radius:var(--radius-control,10px);background:transparent;color:var(--ink-2,#525252);padding:8px 12px;font-size:14px;font-weight:500;line-height:20px;cursor:pointer;font-family:var(--font-atkinson,\"Atkinson Hyperlegible Next\"),ui-sans-serif,system-ui,sans-serif;transition-property:color,background-color,border-color;transition-duration:150ms;transition-timing-function:cubic-bezier(.4,0,.2,1);}.ds-btn-quiet:hover{background:var(--surface-2,#f1f2f3);color:var(--ink,#141414)}.ds-btn-quiet:active{background:var(--surface-2,#f1f2f3)}.ds-btn-quiet:focus-visible{outline:2px solid var(--focus,#756900);outline-offset:3px;}.ds-btn-quiet:disabled{cursor:progress;opacity:.7}@media(prefers-reduced-motion:reduce){.ds-btn-quiet{transition-duration:.01ms}}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "A labeled field with clear border, focus and invalid states.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\" for=\"ds-applicant\">Applicant name</label><input class=\"ds-field-input\" id=\"ds-applicant\" type=\"text\" /></div>",
+      "css": ".ds-field{display:grid;gap:8px;min-width:0;font-family:var(--font-atkinson,\"Atkinson Hyperlegible Next\"),ui-sans-serif,system-ui,sans-serif;}.ds-field-label{font-size:14px;font-weight:600;color:var(--ink,#141414)}.ds-field-input{min-height:48px;min-width:0;border:1px solid var(--line-strong,#b4b4b4);border-radius:var(--radius-control,10px);background:var(--surface,#fff);color:var(--ink,#141414);padding:10px 14px;font-size:16px;font-family:var(--font-atkinson,\"Atkinson Hyperlegible Next\"),ui-sans-serif,system-ui,sans-serif;transition-property:color,background-color,border-color;transition-duration:150ms;transition-timing-function:cubic-bezier(.4,0,.2,1);}.ds-field-input::placeholder{color:var(--ink-3,#696969)}.ds-field-input:hover{border-color:var(--ink-3,#696969)}.ds-field-input:focus-visible{border-color:var(--focus,#756900);outline:2px solid var(--focus,#756900);outline-offset:3px;}.ds-field-input[aria-invalid=true]{border-color:var(--bad,#be3030)}.ds-field-input:disabled{cursor:not-allowed;opacity:.7}@media(prefers-reduced-motion:reduce){.ds-field-input{transition-duration:.01ms}}"
+    },
+    {
+      "name": "Task Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "The softly raised container for a substantial task or list.",
+      "html": "<section class=\"ds-panel\"><h2 class=\"ds-panel-title\">Documents</h2></section>",
+      "css": ".ds-panel{min-width:0;border-radius:var(--radius-panel,12px);background:var(--surface,#fff);color:var(--ink,#141414);padding:24px;box-shadow:var(--elevation-card,0 4px 24px -8px rgb(0 0 0 / 10%));font-family:var(--font-atkinson,\"Atkinson Hyperlegible Next\"),ui-sans-serif,system-ui,sans-serif;}.ds-panel-title{margin:0 0 20px;font-size:20px;font-weight:700;letter-spacing:-.025em}@media(min-width:640px){.ds-panel{padding:32px}}"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status",
+      "description": "A state word plus a dot; color never carries the meaning alone.",
+      "html": "<span class=\"ds-status\"><span class=\"ds-status-dot\" aria-hidden=\"true\"></span>Submitted</span>",
+      "css": ".ds-status{display:inline-flex;align-items:baseline;gap:8px;border-radius:9999px;background:var(--surface-2,#f1f2f3);color:var(--ink-2,#525252);padding:4px 10px;font-size:14px;font-weight:500;white-space:nowrap;font-family:var(--font-atkinson,\"Atkinson Hyperlegible Next\"),ui-sans-serif,system-ui,sans-serif;}.ds-status-dot{width:8px;height:8px;flex-shrink:0;transform:translateY(-.1em);border-radius:9999px;background:var(--ok,#227346)}"
+    },
+    {
+      "name": "Account Navigation",
+      "kind": "nav",
+      "description": "The always-black account bar with the existing yellow checkmark identity and lower rule.",
+      "html": "<nav class=\"ds-account\" aria-label=\"Main navigation\"><a class=\"ds-brand\" href=\"#\"><svg width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect width=\"32\" height=\"32\" rx=\"7\" fill=\"#ffed00\"/><path d=\"M9 17.5l4.5 4.5L23 11\" fill=\"none\" stroke=\"#141414\" stroke-width=\"3.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>Document checks</a><a class=\"ds-nav-link\" href=\"#\">Regulations</a><a class=\"ds-nav-link\" href=\"#\">Stack status</a></nav>",
+      "css": ".ds-account{color-scheme:dark;display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:80px;padding:16px 20px;background:#111111;color:#fff;border-bottom:3px solid var(--accent,#ffed00);font-family:var(--font-atkinson,\"Atkinson Hyperlegible Next\"),ui-sans-serif,system-ui,sans-serif;}.ds-brand{display:inline-flex;align-items:center;gap:12px;min-height:40px;margin-right:16px;border-radius:var(--radius-control,10px);padding:4px 0;color:#fff;font-size:16px;font-weight:700;letter-spacing:-.025em;text-decoration:none}.ds-nav-link{display:inline-flex;min-height:40px;align-items:center;border-radius:var(--radius-control,10px);padding:8px 12px;font-size:14px;font-weight:500;color:#c4c4c4;text-decoration:none;transition-property:color,background-color,border-color;transition-duration:150ms;transition-timing-function:cubic-bezier(.4,0,.2,1);}.ds-nav-link:hover{background:#292929;color:#fff}.ds-brand:focus-visible,.ds-nav-link:focus-visible{outline:2px solid var(--accent,#ffed00);outline-offset:3px}@media(min-width:640px){.ds-account{padding-inline:40px}}@media(prefers-reduced-motion:reduce){.ds-nav-link{transition-duration:.01ms}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Audit Ledger",
+    "overview": "An evidence-first reviewer's desk with a Raiffeisen-inspired premium FinTech identity: vibrant yellow actions, deep black navigation, clear white panels and generous space on a light-gray canvas. Soft shadows and rounded controls give the workspace a confident, tactile finish while rows, quotes and aligned figures keep document checking precise.\n\nThis is an Operate interface. Familiar forms and tables carry the work; visual emphasis helps people find the next action and its supporting evidence. Motion reports interaction and state.",
+    "keyCharacteristics": [
+      "One self-hosted sans family, with clear identifiers and tabular figures; its mono sibling is reserved for code.",
+      "Yellow action and selection cues, a black account bar, and softly elevated panels.",
+      "Light by default, with system-driven dark mode and original PDFs kept on white paper."
+    ],
+    "rules": [
+      {
+        "name": "The State-Only Colour Rule",
+        "body": "`ok`, `warn` and `bad` communicate verification or service state; each state also has a word. Yellow communicates action, selection and identity.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Voice Rule",
+        "body": "Keep the sans family throughout the interface; reserve its mono sibling for code.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do keep every finding beside its document, page and exact quote.",
+      "Do use semantic tokens and shared controls for new screens.",
+      "Do preserve English and Romanian layouts, visible focus, state words and reduced-motion behavior.",
+      "Do keep original PDF pages white and evidence highlights legible in both themes.",
+      "Do write empty states and errors that explain the next action."
+    ],
+    "donts": [
+      "Don't add Tailwind palette colors; add a semantic token and document it with the source.",
+      "Don't use gradient text, glass, decorative blur, emoji icons or labels above page headings.",
+      "Don't nest cards inside task panels or replace dense tables with equal-size icon cards.",
+      "Don't use invented metrics, documents or findings as visual decoration."
+    ]
+  }
+}

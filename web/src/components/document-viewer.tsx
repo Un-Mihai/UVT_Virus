@@ -194,7 +194,7 @@ function ViewerPageBox({
       ref={box}
       role="group"
       aria-label={label}
-      className="relative w-full overflow-hidden rounded-md border border-line bg-surface-2"
+      className="document-page relative w-full overflow-hidden rounded-control border border-line bg-surface-2"
       style={{ aspectRatio: `${page.width} / ${page.height}` }}
     >
       <canvas ref={canvas} aria-hidden className="absolute inset-0 size-full" />
@@ -245,7 +245,7 @@ function Highlight({
       ))}
       {active && (
         <div
-          className="absolute inset-x-3 z-10 rounded-md border border-line-strong bg-surface p-3 text-sm text-ink"
+          className="absolute inset-x-3 z-10 rounded-control border border-line-strong bg-surface p-4 text-sm text-ink shadow-action"
           style={
             below
               ? {

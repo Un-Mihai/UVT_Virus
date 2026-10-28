@@ -9,7 +9,7 @@ import { hasRole, type Role } from "@/lib/roles";
 import { LanguageSwitcher } from "./language-switcher";
 
 const navLink =
-  "rounded-md px-2.5 py-1.5 font-medium text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink";
+  "inline-flex min-h-10 items-center rounded-control px-3 py-2 font-medium text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink";
 
 /** The app's name, where each role works, the language, who is signed in, and the way out. */
 export async function AccountBar() {
@@ -24,15 +24,15 @@ export async function AccountBar() {
     .map((role) => dictionary.roles[role]);
 
   return (
-    <div className="border-b border-line">
-      <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 px-5 py-2 text-sm sm:px-10">
+    <div className="account-bar">
+      <div className="mx-auto flex min-h-20 w-full max-w-360 flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 text-sm sm:px-10">
         <nav
           aria-label={dictionary.nav.label}
-          className="flex flex-wrap items-center gap-1"
+          className="flex flex-wrap items-center gap-x-1 gap-y-2"
         >
           <Link
             href={withLocale(locale, "/")}
-            className="mr-2 rounded-md py-1.5 font-semibold text-ink"
+            className="brand-link mr-4 inline-flex min-h-10 items-center gap-3 rounded-control py-1 text-base font-bold tracking-tight text-ink"
           >
             {dictionary.app.name}
           </Link>
@@ -48,9 +48,9 @@ export async function AccountBar() {
             {dictionary.nav.status}
           </Link>
         </nav>
-        <div className="ml-auto flex flex-wrap items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 sm:ml-auto sm:w-auto">
           <LanguageSwitcher locale={locale} label={dictionary.nav.language} />
-          <span className="text-ink-2">
+          <span className="min-w-0 wrap-anywhere text-ink-2">
             <span className="font-medium text-ink">
               {user.name ?? user.username}
             </span>

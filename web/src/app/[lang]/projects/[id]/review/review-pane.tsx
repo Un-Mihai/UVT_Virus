@@ -89,8 +89,8 @@ export function ReviewPane({
     }));
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(20rem,26rem)_1fr]">
-      <div className={paneScroll}>
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)]">
+      <div className={`panel ${paneScroll}`}>
         <p className="mb-4 max-w-prose text-ink-2">{note}</p>
         {findings.length > 0 && (
           <ol className="divide-y divide-line border-y border-line">
@@ -100,7 +100,7 @@ export function ReviewPane({
                   type="button"
                   aria-current={finding.id === activeId || undefined}
                   onClick={() => select(finding)}
-                  className="block w-full rounded-md px-3 py-2 text-left transition-colors duration-150 hover:bg-surface-2 aria-current:bg-surface-2"
+                  className="finding-button block w-full rounded-control px-3 py-4 text-left transition-colors duration-150 hover:bg-surface-2 aria-current:bg-surface-2"
                 >
                   <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <StatusWord state={finding.severity}>
@@ -172,7 +172,7 @@ export function ReviewPane({
         )}
       </div>
       {document && (
-        <div className={`grid content-start gap-4 ${paneScroll}`}>
+        <div className={`grid min-w-0 content-start gap-4 ${paneScroll}`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             {documents.length > 1 ? (
               <div
@@ -186,7 +186,7 @@ export function ReviewPane({
                     type="button"
                     aria-pressed={candidate.id === document.id}
                     onClick={() => setDocumentId(candidate.id)}
-                    className="rounded-md px-2.5 py-1.5 text-sm font-medium text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink aria-pressed:bg-surface-2 aria-pressed:text-ink"
+                    className="min-h-11 max-w-full rounded-control px-3 py-2 text-sm font-semibold wrap-anywhere text-ink-2 transition-colors duration-150 hover:bg-surface-2 hover:text-ink aria-pressed:bg-accent aria-pressed:text-on-accent"
                   >
                     {candidate.filename}
                   </button>

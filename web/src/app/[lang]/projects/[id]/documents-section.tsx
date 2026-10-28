@@ -60,7 +60,7 @@ export function DocumentsSection({
 }) {
   const text = dictionary.documents;
   return (
-    <section className="mt-12" aria-labelledby="documents-title">
+    <section className="panel mt-10" aria-labelledby="documents-title">
       <h2 id="documents-title" className={sectionTitle}>
         {text.title}
       </h2>
@@ -79,7 +79,7 @@ export function DocumentsSection({
                 key={document.id}
                 className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 py-3.5"
               >
-                <div className="grid gap-1">
+                <div className="grid min-w-0 gap-1.5">
                   <a
                     href={`/api/projects/${projectId}/documents/${document.id}/file`}
                     target="_blank"

@@ -248,7 +248,7 @@ function Calls({ calls }: { calls: Usage["recent_calls"] }) {
           duration.
         </p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="data-table overflow-x-auto">
           <table className="w-full min-w-[44rem] text-left text-sm">
             <thead className="border-b border-line-strong text-ink-3">
               <tr>
@@ -302,8 +302,8 @@ function Calls({ calls }: { calls: Usage["recent_calls"] }) {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-12">
-      <h2 className="mb-4 text-lg font-semibold tracking-tight">{title}</h2>
+    <section className="panel mt-10">
+      <h2 className="mb-5 text-xl font-bold tracking-tight">{title}</h2>
       {children}
     </section>
   );
@@ -332,13 +332,13 @@ function ServiceRow({
   children: ReactNode;
 }) {
   return (
-    <li className="grid grid-cols-[auto_1fr_auto] items-baseline gap-x-4 gap-y-1 py-3.5 sm:grid-cols-[auto_9rem_1fr_auto]">
+    <li className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 py-4 sm:grid-cols-[auto_7rem_minmax(0,1fr)_auto]">
       <span
         aria-hidden
         className={`size-2 translate-y-[-0.1em] rounded-full ${dot[state]}`}
       />
       <span className="font-medium">{name}</span>
-      <span className="col-start-2 row-start-2 text-ink-2 sm:col-start-3 sm:row-start-1">
+      <span className="col-start-2 row-start-2 min-w-0 text-sm wrap-anywhere text-ink-2 sm:col-start-3 sm:row-start-1">
         {children}
       </span>
       <span
@@ -352,8 +352,8 @@ function ServiceRow({
 
 export function StatusReportSkeleton() {
   return (
-    <section className="mt-12" aria-busy="true">
-      <h2 className="mb-4 text-lg font-semibold tracking-tight">Services</h2>
+    <section className="panel mt-10" aria-busy="true">
+      <h2 className="mb-5 text-xl font-bold tracking-tight">Services</h2>
       <p className="text-ink-3">Asking the API, database and AI provider…</p>
     </section>
   );

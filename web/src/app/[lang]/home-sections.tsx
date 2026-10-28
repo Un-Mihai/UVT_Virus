@@ -85,11 +85,11 @@ function ClientApplications({
 }: View & { projects: ProjectSummary[] }) {
   const text = dictionary.home.client;
   return (
-    <section className="mt-12" aria-labelledby="applications-title">
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+    <section className="panel mt-10" aria-labelledby="applications-title">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h2
           id="applications-title"
-          className="text-lg font-semibold tracking-tight"
+          className="text-xl font-bold tracking-tight"
         >
           {text.title}
         </h2>
@@ -103,7 +103,7 @@ function ClientApplications({
       {projects.length === 0 ? (
         <p className="max-w-prose text-ink-2">{text.empty}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="data-table overflow-x-auto">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <thead className="border-b border-line-strong text-ink-3">
               <tr>
@@ -155,14 +155,14 @@ function SubmittedProjects({
 }: View & { projects: ProjectSummary[] }) {
   const text = dictionary.home.reviewer;
   return (
-    <section className="mt-12" aria-labelledby="submitted-title">
+    <section className="panel mt-10" aria-labelledby="submitted-title">
       <h2 id="submitted-title" className={sectionTitle}>
         {text.title}
       </h2>
       {projects.length === 0 ? (
         <p className="max-w-prose text-ink-2">{text.empty}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="data-table overflow-x-auto">
           <table className="w-full min-w-[36rem] text-left text-sm">
             <thead className="border-b border-line-strong text-ink-3">
               <tr>
@@ -210,9 +210,9 @@ function ProjectTypes({
 }) {
   const text = dictionary.home.admin;
   return (
-    <section className="mt-12" aria-labelledby="types-title">
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
-        <h2 id="types-title" className="text-lg font-semibold tracking-tight">
+    <section className="panel mt-10" aria-labelledby="types-title">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h2 id="types-title" className="text-xl font-bold tracking-tight">
           {text.title}
         </h2>
         <Link
@@ -253,7 +253,7 @@ function ProjectTypes({
 /** Says what is loading while the sections wait for the API. */
 export function HomeSkeleton({ text }: { text: string }) {
   return (
-    <section className="mt-12" aria-busy="true">
+    <section className="panel mt-10" aria-busy="true">
       <p className="text-ink-3">{text}</p>
     </section>
   );

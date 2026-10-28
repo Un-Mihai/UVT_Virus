@@ -27,8 +27,8 @@ function Field({
   children,
 }: FieldText & { id: string; required?: boolean; children: ReactNode }) {
   return (
-    <div className="grid content-start gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-ink">
+    <div className="grid min-w-0 content-start gap-2">
+      <label htmlFor={id} className="text-sm font-semibold text-ink">
         {label}
         {required && requiredLabel && (
           <span className="font-normal text-ink-3"> ({requiredLabel})</span>

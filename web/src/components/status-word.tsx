@@ -26,7 +26,7 @@ export function StatusWord({
 }) {
   return (
     <span
-      className={`inline-flex items-baseline gap-2 text-sm font-medium whitespace-nowrap ${word[state]}`}
+      className={`inline-flex items-baseline gap-2 rounded-full bg-surface-2 px-2.5 py-1 text-sm font-medium whitespace-nowrap ${word[state]}`}
     >
       <span
         aria-hidden

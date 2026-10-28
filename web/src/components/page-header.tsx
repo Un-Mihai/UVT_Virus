@@ -11,12 +11,14 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="grid gap-6 border-b border-line pb-8 lg:grid-cols-[1fr_auto] lg:gap-x-12">
-      <div className="max-w-prose">
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">
+    <header className="page-header grid gap-6 border-b border-line pb-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-x-12">
+      <div className="max-w-prose min-w-0">
+        <h1 className="text-3xl leading-tight font-bold tracking-tight text-balance sm:text-4xl">
           {title}
         </h1>
-        {lead && <div className="mt-2 text-ink-2">{lead}</div>}
+        {lead && (
+          <div className="mt-3 text-base/relaxed text-ink-2">{lead}</div>
+        )}
       </div>
       {actions && (
         <div className="flex flex-wrap items-start gap-3 lg:justify-end">

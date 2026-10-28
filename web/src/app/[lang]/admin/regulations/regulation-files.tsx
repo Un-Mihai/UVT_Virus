@@ -90,7 +90,7 @@ export function RegulationFiles({
       )}
       <div className="mt-6 grid justify-items-start gap-2">
         <label
-          className={`${secondaryButton} cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent has-disabled:cursor-progress has-disabled:opacity-70`}
+          className={`${secondaryButton} cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus has-disabled:cursor-progress has-disabled:opacity-70`}
         >
           {uploading ? text.uploading : text.uploadDocument}
           <input
@@ -149,7 +149,7 @@ function FileRow({
 
   return (
     <li className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 py-3.5">
-      <div className="grid gap-1">
+      <div className="grid min-w-0 gap-1.5">
         <a
           href={`/api/regulation-documents/${document.id}/file`}
           target="_blank"
