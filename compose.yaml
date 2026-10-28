@@ -62,7 +62,7 @@ services:
     ports:
       - "127.0.0.1:${KEYCLOAK_PORT:-8080}:8080"
     volumes:
-      - ./infra/keycloak:/opt/keycloak/data/import:ro
+      - ./infra/keycloak:/opt/keycloak/data/import:ro,z
     depends_on:
       db-setup:
         condition: service_completed_successfully
@@ -90,7 +90,7 @@ services:
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     volumes:
-      - ./api:/app
+      - ./api:/app:z
     depends_on:
       db:
         condition: service_healthy
@@ -118,7 +118,7 @@ services:
     ports:
       - "127.0.0.1:${WEB_PORT:-3000}:3000"
     volumes:
-      - ./web:/app
+      - ./web:/app:z
       # The container's own Linux node_modules and build cache, not the host's. `make up`
       # replaces them with fresh copies from the image, so pulled dependencies arrive.
       - /app/node_modules
