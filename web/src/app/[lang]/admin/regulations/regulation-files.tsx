@@ -11,7 +11,10 @@ import { fill } from "@/i18n/template";
 import { api } from "@/lib/api/browser";
 import { problemText } from "@/lib/api/problem";
 import type { components } from "@/lib/api/schema";
-import { uploadRegulationDocument } from "@/lib/api/upload";
+import {
+  type RegulationLevel,
+  uploadRegulationDocument,
+} from "@/lib/api/upload";
 import { formatDateTime } from "@/lib/format";
 
 type RegulationDocument = components["schemas"]["RegulationDocumentOut"];
@@ -24,18 +27,22 @@ const OCR_STATES: Record<string, [StatusState, keyof Text]> = {
   unavailable: ["bad", "ocrUnavailable"],
 };
 
-/** The regulation PDFs of one rule set: AI-judged clauses quote them. */
+const INDEX_STATES: Record<string, [StatusState, keyof Text]> = {
+  pending: ["warn", "indexPending"],
+  done: ["ok", "indexDone"],
+  failed: ["bad", "indexFailed"],
+};
+
+/** The regulation PDFs at one level: split into passages, embedded, and retrieved by checks. */
 export function RegulationFiles({
   documents,
-  projectTypeId,
-  scope,
+  level,
   locale,
   text,
   errors,
 }: {
   documents: RegulationDocument[];
-  projectTypeId: number;
-  scope: "client" | "reviewer";
+  level: RegulationLevel;
   locale: Locale;
   text: Text;
   errors: Dictionary["errors"];
@@ -50,11 +57,7 @@ export function RegulationFiles({
     if (!file) return;
     setUploading(true);
     try {
-      const { error, response } = await uploadRegulationDocument(
-        projectTypeId,
-        scope,
-        file,
-      );
+      const { error, response } = await uploadRegulationDocument(level, file);
       setProblem(
         error
           ? problemText({ status: response.status, error }, errors, locale)
@@ -123,6 +126,9 @@ function FileRow({
   const [problem, setProblem] = useState<string | null>(null);
   const path = { params: { path: { document_id: document.id } } };
   const ocr = document.ocr_status ? OCR_STATES[document.ocr_status] : undefined;
+  const index = INDEX_STATES[document.index_status];
+  const stuck =
+    document.index_status === "failed" || document.ocr_status === "failed";
 
   function act(call: () => Promise<{ error?: unknown; response: Response }>) {
     startTransition(async () => {
@@ -161,24 +167,27 @@ function FileRow({
           {ocr && (
             <StatusWord state={ocr[0]}>{String(text[ocr[1]])}</StatusWord>
           )}
+          {index && (
+            <StatusWord state={index[0]}>{String(text[index[1]])}</StatusWord>
+          )}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        {document.ocr_status === "failed" && (
+        {stuck && (
           <button
             type="button"
             disabled={pending}
             onClick={() =>
               act(() =>
                 api.POST(
-                  "/api/regulation-documents/{document_id}/read-scans",
+                  "/api/regulation-documents/{document_id}/process",
                   path,
                 ),
               )
             }
             className={quietButton}
           >
-            {pending ? text.readingAgain : text.readAgain}
+            {pending ? text.processing : text.processAgain}
           </button>
         )}
         {confirming ? (

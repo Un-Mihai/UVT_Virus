@@ -1,7 +1,9 @@
-"""Deterministic checks, addressable by id from a rule (`RegulationRule.check_id`).
+"""Deterministic checks: the tools the compliance agent asks for when a requirement needs
+arithmetic or an identifier validated, so code computes and the model only reads.
 
 Adding a check: write a function in a module of this package, decorate it with
-@register_check, and import the module in checks/__init__.py. Admins can then use its id.
+@register_check, and import the module in checks/__init__.py. The model is offered every
+registered check, with its description and params schema, on the next run.
 """
 
 from collections.abc import Callable
@@ -53,17 +55,20 @@ def list_checks() -> list[CheckSpec]:
     return sorted(_CHECKS.values(), key=lambda spec: spec.id)
 
 
-def validated_params(check_id: str | None, params: dict[str, Any]) -> BaseModel:
-    """The rule's params parsed for its check; raises InvalidCheckError for the admin to fix."""
-    spec = _CHECKS.get(check_id or "")
+def validated_params(check_id: str, params: dict[str, Any]) -> BaseModel:
+    """The params parsed for the check; InvalidCheckError when the check or params are wrong."""
+    spec = _CHECKS.get(check_id)
     if spec is None:
-        raise InvalidCheckError(f"Unknown check {check_id!r}. GET /api/checks lists them.")
+        raise InvalidCheckError(f"Unknown check {check_id!r}.")
     try:
         return spec.params_model.model_validate(params)
     except ValidationError as error:
         raise InvalidCheckError(f"Invalid params for {check_id}: {error}") from error
 
 
-def run_check(context: VerificationContext, rule: RuleView) -> list[FindingDraft]:
-    params = validated_params(rule.check_id, rule.params)
-    return _CHECKS[rule.check_id or ""].function(context, rule, params)
+def run_check(
+    context: VerificationContext, rule: RuleView, check_id: str, params: dict[str, Any]
+) -> list[FindingDraft]:
+    """Findings of one check, reported against `rule`; InvalidCheckError for an unknown check."""
+    parsed = validated_params(check_id, params)
+    return _CHECKS[check_id].function(context, rule, parsed)

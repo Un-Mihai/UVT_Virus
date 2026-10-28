@@ -31,8 +31,10 @@ build stays consistent and free of "AI slop".
   ([docs/ocr.md](docs/ocr.md)).
 - **English and Romanian.** Every screen, and every finding's reason and recommendation, in both
   languages; switch on any page.
-- **Retrieval ready.** pgvector for embeddings, with tested patterns in the
-  `document-verification` skill.
+- **Regulation retrieval (RAG).** Regulation PDFs are read, split into page-numbered passages and
+  embedded in pgvector. Verification retrieves requirements from global, project-type and
+  project-specific PDFs, alongside admin requirements written in natural language, and returns
+  discrepancies with citations ([docs/regulations.md](docs/regulations.md)).
 - **Agents that follow the same rules.** `AGENTS.md` holds the stack rules and the definition of
   done; skills cover UI design, minimal code, document checks, deployment and the pitch.
 - **Quality gates.** `make check` (formatting, lint, types, tests) and `make check-ui` (two UI

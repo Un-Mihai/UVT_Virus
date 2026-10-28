@@ -11,13 +11,11 @@ from decimal import Decimal
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import undefer
-from starlette.concurrency import run_in_threadpool
 
 from app.config import Settings
-from app.documents.ingest import record_identifiers, regulation_text
-from app.models import DocumentPage, ProjectDocument, RegulationDocument
+from app.documents.ingest import record_identifiers
+from app.models import DocumentPage, ProjectDocument
 from app.ocr import OcrEngine, OcrFailure, OcrText, read_pages
-from app.pdf import read_pdf
 from app.personal_data import IdentifierHasher
 from app.vocabulary import OcrStatus
 
@@ -101,44 +99,3 @@ async def _save_page(
     page.ocr_error = None if outcome.text.strip() else "No text was found on the page."
     page.ocr_confidence = Decimal(str(outcome.confidence))
     await record_identifiers(session, project_id, document_id, number, outcome.text, hasher)
-
-
-async def read_scanned_regulation(
-    sessions: async_sessionmaker[AsyncSession],
-    engine: OcrEngine,
-    settings: Settings,
-    regulation_id: int,
-) -> None:
-    """OCR for a regulation's scanned pages; its text is rebuilt with what they say."""
-    try:
-        async with sessions() as session:
-            regulation = await session.get_one(
-                RegulationDocument, regulation_id, options=[undefer(RegulationDocument.content)]
-            )
-            content = regulation.content
-        pages = await run_in_threadpool(read_pdf, content)
-        texts = {page.number: page.text for page in pages if page.text}
-        failed = 0
-        async for number, outcome in read_pages(
-            content,
-            [page.number for page in pages if page.is_scan],
-            engine,
-            settings.ocr_dpi,
-            settings.ocr_concurrency,
-        ):
-            if isinstance(outcome, OcrFailure) or not outcome.text.strip():
-                failed += 1
-            else:
-                texts[number] = outcome.text
-        status = OcrStatus.FAILED if failed else OcrStatus.DONE
-        values = {"text": regulation_text(sorted(texts.items())), "ocr_status": status}
-    except Exception:
-        logger.exception("Reading the scans of regulation %s failed", regulation_id)
-        values = {"ocr_status": OcrStatus.FAILED}
-    async with sessions() as session:
-        await session.execute(
-            update(RegulationDocument)
-            .where(RegulationDocument.id == regulation_id)
-            .values(**values)
-        )
-        await session.commit()

@@ -24,7 +24,6 @@ from app.routes import (
     regulations,
     verifications,
 )
-from app.verification.checks import InvalidCheckError
 from app.verification.orchestrator import default_orchestrator
 
 
@@ -84,10 +83,6 @@ def create_app(
     @app.exception_handler(UploadRejectedError)
     async def upload_rejected(_: Request, error: UploadRejectedError) -> JSONResponse:
         return JSONResponse({"detail": str(error)}, status_code=error.status_code)
-
-    @app.exception_handler(InvalidCheckError)
-    async def invalid_check(_: Request, error: InvalidCheckError) -> JSONResponse:
-        return JSONResponse({"detail": str(error)}, status_code=422)
 
     @app.exception_handler(openai.APIError)
     async def provider_error(_: Request, error: openai.APIError) -> JSONResponse:

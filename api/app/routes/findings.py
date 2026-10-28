@@ -10,7 +10,7 @@ from app.deps import SessionDep, VisibilityDep
 from app.models import DocumentFinding, ProjectDocument, VerificationRun
 from app.projects.access import visible_project
 from app.routes.problems import PROBLEMS
-from app.routes.verifications import FindingOut, finding_out
+from app.routes.verifications import FindingOut, finding_out, regulation_names
 from app.verification.reports import is_visible
 from app.vocabulary import Decision
 
@@ -49,4 +49,5 @@ async def decide(
     document = (
         await session.get(ProjectDocument, finding.document_id) if finding.document_id else None
     )
-    return finding_out(finding, document.filename if document else None)
+    regulations = await regulation_names(session, [finding])
+    return finding_out(finding, document.filename if document else None, regulations)

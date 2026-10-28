@@ -56,12 +56,23 @@ page, and the checks that matter (sums, dates, identifiers) are computed in code
 
 ## Capabilities and Constraints
 
-- Database persistence (PostgreSQL): regulation documents per project type and verification scope
-  (`client` or `reviewer`), the client's form input (JSON), uploaded files (raw bytes and
-  extracted pages) and verification findings (`DocumentFinding`).
-- Multi-agent orchestration runs a separate rule set per project type and verification scope. It
-  combines extraction agents, deterministic Python checks (sums, dates, CUI/IBAN/CNP) and
-  regulation compliance agents.
+- Decided: requirements come only from uploaded regulation PDFs or admin requirements written in
+  natural language. The LLM derives applicable requirements dynamically during verification;
+  executable checks are tools it may request when a supplied requirement needs calculation.
+- Decided: regulation PDFs may apply globally, to a project type, or to one project. A project
+  inherits all three levels within its verification scope (`client` or `reviewer`). Project-only
+  requirements come from its PDFs; admin-written requirements apply globally or to a type.
+- Database persistence (PostgreSQL with pgvector): original regulation PDFs, page-numbered text
+  passages and their embeddings, the client's form input (JSON), uploaded files (raw bytes and
+  extracted pages), and verification findings (`DocumentFinding`).
+- Regulation ingestion extracts text, runs OCR for scans, splits each page into passages, and
+  embeds them through `AIClient`. Verification retrieves applicable passages by cosine distance
+  and compares every user document page with those passages and admin-written requirements.
+  Findings appear in the verification panel with document highlights and regulation citations.
+  Sums, dates and identifiers are checked in Python.
+- Decided: indexing failures retain extracted passages for bounded text fallback and allow an
+  admin to process the PDF again. Changing the embedding model or dimensions requires reindexing
+  for vector retrieval; incompatible vectors are excluded from similarity search.
 - The backend returns the annotated, highlighted document and highlight anchors together with the
   error reasons and change recommendations.
 - Proposed (confirm): the cost per checked document is measured and shown, from the `ai_calls`

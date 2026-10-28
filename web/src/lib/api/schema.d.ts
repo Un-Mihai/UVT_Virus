@@ -162,7 +162,7 @@ export interface paths {
     };
     /**
      * Checks
-     * @description The deterministic checks a rule of kind "check" can name, with their params.
+     * @description The code checks the model may ask for while comparing documents with regulations.
      */
     get: operations["checks_api_checks_get"];
     put?: never;
@@ -173,15 +173,18 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/project-types/{project_type_id}/regulations/{scope}": {
+  "/api/admin/projects": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Regulation Set */
-    get: operations["regulation_set_api_project_types__project_type_id__regulations__scope__get"];
+    /**
+     * Admin Projects
+     * @description Every project, newest first, so an admin can attach regulations to one.
+     */
+    get: operations["admin_projects_api_admin_projects_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -190,7 +193,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/project-types/{project_type_id}/regulations/{scope}/documents": {
+  "/api/regulations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Regulation Set
+     * @description The regulation PDFs and written rules of one level; no type and no project means every
+     *     project.
+     */
+    get: operations["regulation_set_api_regulations_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/regulations/documents": {
     parameters: {
       query?: never;
       header?: never;
@@ -201,16 +225,17 @@ export interface paths {
     put?: never;
     /**
      * Upload Regulation
-     * @description Stores the regulation; scanned pages are then read by OCR in the background.
+     * @description Stores a regulation PDF; it is then read (OCR for scans), split into passages and
+     *     embedded in the background, so checks can retrieve what applies to each document.
      */
-    post: operations["upload_regulation_api_project_types__project_type_id__regulations__scope__documents_post"];
+    post: operations["upload_regulation_api_regulations_documents_post"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/regulation-documents/{document_id}/read-scans": {
+  "/api/regulation-documents/{document_id}/process": {
     parameters: {
       query?: never;
       header?: never;
@@ -220,10 +245,11 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Read Regulation Scans Again
-     * @description Reads the regulation's scanned pages once more, after a failure or a stalled reading.
+     * Process Regulation Again
+     * @description Reads, splits and embeds the regulation once more: after a failure, a stalled job, or
+     *     a change of embedding model or AI provider.
      */
-    post: operations["read_regulation_scans_again_api_regulation_documents__document_id__read_scans_post"];
+    post: operations["process_regulation_again_api_regulation_documents__document_id__process_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -264,7 +290,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/project-types/{project_type_id}/regulations/{scope}/rules": {
+  "/api/regulations/rules": {
     parameters: {
       query?: never;
       header?: never;
@@ -274,7 +300,7 @@ export interface paths {
     get?: never;
     put?: never;
     /** Create Rule */
-    post: operations["create_rule_api_project_types__project_type_id__regulations__scope__rules_post"];
+    post: operations["create_rule_api_regulations_rules_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -513,6 +539,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/projects/{project_id}/regulations/{regulation_id}/file": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cited Regulation
+     * @description A regulation PDF that applies to this project in the caller's scope, so a finding's
+     *     citation opens in one click (append #page=N to land on the page).
+     */
+    get: operations["cited_regulation_api_projects__project_id__regulations__regulation_id__file_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/findings/{finding_id}/decision": {
     parameters: {
       query?: never;
@@ -537,6 +584,19 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * AdminProjectOut
+     * @description A project an admin can attach regulations to.
+     */
+    AdminProjectOut: {
+      /** Id */
+      id: number;
+      /** Title */
+      title: string;
+      /** Project Type Id */
+      project_type_id: number;
+      status: components["schemas"]["ProjectStatus"];
+    };
     /** AiCallOut */
     AiCallOut: {
       /** Id */
@@ -592,12 +652,15 @@ export interface components {
       /** File */
       file: Blob;
     };
-    /** Body_upload_regulation_api_project_types__project_type_id__regulations__scope__documents_post */
-    Body_upload_regulation_api_project_types__project_type_id__regulations__scope__documents_post: {
+    /** Body_upload_regulation_api_regulations_documents_post */
+    Body_upload_regulation_api_regulations_documents_post: {
       /** File */
       file: Blob;
     };
-    /** CheckOut */
+    /**
+     * CheckOut
+     * @description A code check the model may ask for while it compares documents with regulations.
+     */
     CheckOut: {
       /** Id */
       id: string;
@@ -700,6 +763,7 @@ export interface components {
       quote: string | null;
       /** Rects */
       rects: number[][];
+      regulation: components["schemas"]["RegulationCitation"] | null;
       decision: components["schemas"]["Decision"] | null;
       /** Decision Note */
       decision_note: string | null;
@@ -722,6 +786,12 @@ export interface components {
       /** Pgvector */
       pgvector: string | null;
     };
+    /**
+     * IndexStatus
+     * @description Whether a regulation's passages are embedded and searchable.
+     * @enum {string}
+     */
+    IndexStatus: "pending" | "done" | "failed";
     /**
      * OcrStatus
      * @description How a page without a text layer is being read; None on pages that have one.
@@ -871,6 +941,20 @@ export interface components {
       title?: string | null;
       form?: components["schemas"]["ApplicationForm"] | null;
     };
+    /**
+     * RegulationCitation
+     * @description The regulation passage a finding rests on.
+     */
+    RegulationCitation: {
+      /** Document Id */
+      document_id: number;
+      /** Filename */
+      filename: string;
+      /** Page */
+      page: number;
+      /** Quote */
+      quote: string | null;
+    };
     /** RegulationDocumentOut */
     RegulationDocumentOut: {
       /** Id */
@@ -886,71 +970,61 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
+      /** Project Type Id */
+      project_type_id: number | null;
+      /** Project Id */
+      project_id: number | null;
       /** Scanned Pages */
       scanned_pages: number;
       ocr_status: components["schemas"]["OcrStatus"] | null;
+      index_status: components["schemas"]["IndexStatus"];
+      /** Index Error */
+      index_error: string | null;
     };
-    /** RegulationSet */
+    /**
+     * RegulationSet
+     * @description What one level holds for one scope (not what it inherits from wider levels).
+     */
     RegulationSet: {
-      /** Project Type Id */
-      project_type_id: number;
       scope: components["schemas"]["Scope"];
+      /** Project Type Id */
+      project_type_id: number | null;
+      /** Project Id */
+      project_id: number | null;
       /** Documents */
       documents: components["schemas"]["RegulationDocumentOut"][];
       /** Rules */
       rules: components["schemas"]["RuleOut"][];
     };
-    /** RuleIn */
-    RuleIn: {
-      /** Code */
-      code: string;
-      /** Title */
-      title: string;
-      /**
-       * Description
-       * @default
-       */
-      description: string;
-      kind: components["schemas"]["RuleKind"];
-      /** Check Id */
-      check_id?: string | null;
-      /**
-       * Params
-       * @default {}
-       */
-      params: {
-        [key: string]: unknown;
-      };
-      /** @default bad */
-      severity: components["schemas"]["Severity"];
-      /**
-       * Active
-       * @default true
-       */
-      active: boolean;
-    };
     /**
-     * RuleKind
-     * @enum {string}
+     * RuleIn
+     * @description A requirement in plain words; the model judges documents against it.
      */
-    RuleKind: "check" | "ai";
-    /** RuleOut */
-    RuleOut: {
-      /** Id */
-      id: number;
+    RuleIn: {
+      scope: components["schemas"]["Scope"];
+      /** Project Type Id */
+      project_type_id?: number | null;
       /** Code */
       code: string;
       /** Title */
       title: string;
       /** Description */
       description: string;
-      kind: components["schemas"]["RuleKind"];
-      /** Check Id */
-      check_id: string | null;
-      /** Params */
-      params: {
-        [key: string]: unknown;
-      };
+      /** @default bad */
+      severity: components["schemas"]["Severity"];
+    };
+    /** RuleOut */
+    RuleOut: {
+      /** Id */
+      id: number;
+      /** Project Type Id */
+      project_type_id: number | null;
+      /** Code */
+      code: string;
+      /** Title */
+      title: string;
+      /** Description */
+      description: string;
       severity: components["schemas"]["Severity"];
       /** Active */
       active: boolean;
@@ -961,12 +1035,6 @@ export interface components {
       title?: string | null;
       /** Description */
       description?: string | null;
-      /** Check Id */
-      check_id?: string | null;
-      /** Params */
-      params?: {
-        [key: string]: unknown;
-      } | null;
       severity?: components["schemas"]["Severity"] | null;
       /** Active */
       active?: boolean | null;
@@ -1592,14 +1660,98 @@ export interface operations {
       };
     };
   };
-  regulation_set_api_project_types__project_type_id__regulations__scope__get: {
+  admin_projects_api_admin_projects_get: {
     parameters: {
       query?: never;
       header?: never;
-      path: {
-        project_type_id: number;
-        scope: components["schemas"]["Scope"];
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminProjectOut"][];
+        };
       };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Content Too Large */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Unsupported Media Type */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  regulation_set_api_regulations_get: {
+    parameters: {
+      query: {
+        scope: components["schemas"]["Scope"];
+        project_type_id?: number | null;
+        project_id?: number | null;
+      };
+      header?: never;
+      path?: never;
       cookie?: never;
     };
     requestBody?: never;
@@ -1687,19 +1839,20 @@ export interface operations {
       };
     };
   };
-  upload_regulation_api_project_types__project_type_id__regulations__scope__documents_post: {
+  upload_regulation_api_regulations_documents_post: {
     parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        project_type_id: number;
+      query: {
         scope: components["schemas"]["Scope"];
+        project_type_id?: number | null;
+        project_id?: number | null;
       };
+      header?: never;
+      path?: never;
       cookie?: never;
     };
     requestBody: {
       content: {
-        "multipart/form-data": components["schemas"]["Body_upload_regulation_api_project_types__project_type_id__regulations__scope__documents_post"];
+        "multipart/form-data": components["schemas"]["Body_upload_regulation_api_regulations_documents_post"];
       };
     };
     responses: {
@@ -1786,7 +1939,7 @@ export interface operations {
       };
     };
   };
-  read_regulation_scans_again_api_regulation_documents__document_id__read_scans_post: {
+  process_regulation_again_api_regulation_documents__document_id__process_post: {
     parameters: {
       query?: never;
       header?: never;
@@ -2066,14 +2219,11 @@ export interface operations {
       };
     };
   };
-  create_rule_api_project_types__project_type_id__regulations__scope__rules_post: {
+  create_rule_api_regulations_rules_post: {
     parameters: {
       query?: never;
       header?: never;
-      path: {
-        project_type_id: number;
-        scope: components["schemas"]["Scope"];
-      };
+      path?: never;
       cookie?: never;
     };
     requestBody: {
@@ -3493,6 +3643,101 @@ export interface operations {
       path: {
         project_id: number;
         document_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/pdf": unknown;
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Content Too Large */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Unsupported Media Type */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cited_regulation_api_projects__project_id__regulations__regulation_id__file_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: number;
+        regulation_id: number;
       };
       cookie?: never;
     };

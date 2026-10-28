@@ -10,11 +10,6 @@ class Scope(StrEnum):
     REVIEWER = "reviewer"
 
 
-class RuleKind(StrEnum):
-    CHECK = "check"  # a deterministic Python check from app/verification/checks
-    AI = "ai"  # a regulation clause judged by the compliance agent
-
-
 class Severity(StrEnum):
     BAD = "bad"  # a definite error
     WARN = "warn"  # worth a look
@@ -39,6 +34,14 @@ class OcrStatus(StrEnum):
     DONE = "done"
     FAILED = "failed"
     UNAVAILABLE = "unavailable"  # no OCR engine configured
+
+
+class IndexStatus(StrEnum):
+    """Whether a regulation's passages are embedded and searchable."""
+
+    PENDING = "pending"
+    DONE = "done"
+    FAILED = "failed"  # no embedding provider, or the provider failed; search falls back
 
 
 class Decision(StrEnum):

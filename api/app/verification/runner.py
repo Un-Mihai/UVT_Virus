@@ -29,6 +29,7 @@ async def run_verification(
     sessions: async_sessionmaker[AsyncSession],
     orchestrator: VerificationOrchestrator,
     hasher: IdentifierHasher,
+    embedding_model: str,
     run_id: int,
 ) -> None:
     """Background entrypoint: never raises, records the outcome on the run instead."""
@@ -39,7 +40,9 @@ async def run_verification(
         await session.commit()
     try:
         async with sessions() as session:
-            context = await load_context(session, project_id, scope, hasher)
+            context = await load_context(
+                session, sessions, project_id, scope, hasher, embedding_model
+            )
             findings = await orchestrator.run(context)
             await _save_cache(session, context)
             session.add_all(_rows(run_id, scope, findings))
@@ -85,6 +88,9 @@ def _rows(run_id: int, scope: Scope, findings: list[ResolvedFinding]) -> list[Do
                 quote=(evidence.quote or None) if evidence else None,
                 rects=[list(rect) for rect in resolved.rects],
                 ocr=resolved.ocr,
+                regulation_document_id=draft.regulation.document_id if draft.regulation else None,
+                regulation_page=draft.regulation.page if draft.regulation else None,
+                regulation_quote=draft.regulation.quote if draft.regulation else None,
             )
         )
     return rows

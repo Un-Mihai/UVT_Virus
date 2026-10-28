@@ -202,7 +202,11 @@ def embeddings(body: dict[str, Any]) -> dict[str, Any]:
     return {
         "object": "list",
         "model": body["model"],
-        "data": [{"object": "embedding", "index": 0, "embedding": encoded}],
+        # One vector per input text, all equal: retrieval order is then arbitrary in tests.
+        "data": [
+            {"object": "embedding", "index": index, "embedding": encoded}
+            for index in range(len(body["input"]) if isinstance(body["input"], list) else 1)
+        ],
         "usage": {"prompt_tokens": 2, "total_tokens": 2},
     }
 

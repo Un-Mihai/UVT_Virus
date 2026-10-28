@@ -10,7 +10,6 @@ from app.pdf import line_boxes, locate_words
 from app.verification.agents.base import VerificationAgent
 from app.verification.agents.compliance import RegulationComplianceAgent
 from app.verification.agents.extraction import FactExtractionAgent
-from app.verification.agents.rule_checks import DeterministicChecksAgent
 from app.verification.context import VerificationContext
 from app.verification.findings import FindingDraft, ResolvedFinding
 
@@ -34,15 +33,13 @@ class VerificationOrchestrator:
 
 
 def default_orchestrator(ai: AIClient, settings: Settings) -> VerificationOrchestrator:
-    """The same agents serve both scopes; the scope's rule set decides what they check."""
+    """Facts first, then the documents against the regulations (with the code checks the
+    model asks for). The same agents serve both scopes; the scope decides which regulations."""
     concurrency = settings.verification_concurrency
     return VerificationOrchestrator(
         [
             [FactExtractionAgent(ai, concurrency)],
-            [
-                DeterministicChecksAgent(),
-                RegulationComplianceAgent(ai, concurrency, settings.compliance_context_chars),
-            ],
+            [RegulationComplianceAgent(ai, concurrency, settings.compliance_context_chars)],
         ]
     )
 

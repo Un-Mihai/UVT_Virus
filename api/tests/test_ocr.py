@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 import shutil
 from typing import Any
 
@@ -12,7 +13,7 @@ from app.ocr.render import render_page_png
 from app.ocr.tesseract import TesseractEngine, parse_tsv
 from app.pdf import locate_words, read_pdf
 from tests.conftest import FakeOcrEngine, FakeProvider, MakeClient, as_user, prompt_of, run_sql
-from tests.flows import add_rule, create_project, create_project_type, upload, verify
+from tests.flows import add_regulation, create_project, create_project_type, upload, verify
 from tests.pdf_factory import make_pdf, make_scan
 from tests.test_romanian import make_cnp
 
@@ -114,16 +115,26 @@ def test_scans_are_read_after_upload(make_client: MakeClient) -> None:
     assert [(row.masked, row.valid) for row in identifiers] == [(f"1*********{CNP[-3:]}", True)]
 
 
+def cui_check(body: dict[str, Any]) -> str:
+    """The model asks for the CUI check on behalf of the first retrieved passage."""
+    passage = re.search(r"\[(P\d+)\]", prompt_of(body))
+    assert passage, "a regulation passage was retrieved"
+    checks = [{"check_id": "identifiers.cui_valid", "params": "{}", "source": passage.group(1)}]
+    return json.dumps({"discrepancies": [], "checks": checks})
+
+
 def test_findings_on_ocr_text_are_only_as_sure_as_the_reading(make_client: MakeClient) -> None:
-    provider = FakeProvider(answers={"PageFacts": scan_facts})
+    provider = FakeProvider(
+        answers={
+            "PageFacts": scan_facts,
+            "DocumentReview": cui_check,
+            "ApplicationReview": json.dumps({"issues": [], "checks": []}),
+        }
+    )
     client = make_client(provider, ocr=FakeOcrEngine(SCAN_LINES, confidence=0.8))
-    type_id = create_project_type(client)
-    for scope, code in (("client", "C-CUI"), ("reviewer", "R-CUI")):
-        add_rule(
-            client, type_id, scope, code=code, title=code, kind="check",
-            check_id="identifiers.cui_valid",
-        )  # fmt: skip
-    project_id = create_project(client, type_id)
+    for scope in ("client", "reviewer"):
+        add_regulation(client, scope, f"{scope}.pdf", ["Art. 1 The CUI must be valid."])
+    project_id = create_project(client, create_project_type(client))
     upload(client, project_id, "scan.pdf", ["(image only)"], scan=True)
 
     as_user(client, "client")
@@ -135,7 +146,12 @@ def test_findings_on_ocr_text_are_only_as_sure_as_the_reading(make_client: MakeC
     # 0.8 OCR confidence: under the client's 0.85 threshold, over the reviewer's 0.55.
     assert client_report["findings"] == []
     [finding] = reviewer_report["findings"]
-    assert (finding["rule_code"], finding["ocr"], finding["confidence"]) == ("R-CUI", True, 0.8)
+    assert (finding["rule_code"], finding["ocr"], finding["confidence"]) == (
+        "identifiers.cui_valid",
+        True,
+        0.8,
+    )
+    assert finding["regulation"]["filename"] == "reviewer.pdf"
     assert finding["rects"], "the misread value is highlighted on the scan"
 
 
@@ -200,17 +216,13 @@ def test_status_reports_whether_scans_can_be_read(make_client: MakeClient) -> No
     assert (status["engine"], status["available"]) == ("fake", True)
 
 
-def test_scanned_regulations_are_read_into_their_text(make_client: MakeClient) -> None:
+def test_scanned_regulations_are_read_and_indexed(make_client: MakeClient) -> None:
     client = make_client(ocr=FakeOcrEngine(["Art. 5 Garantia minima este 10%"]))
-    type_id = create_project_type(client)
 
-    uploaded = client.post(
-        f"/api/project-types/{type_id}/regulations/client/documents",
-        files={"file": ("rules.pdf", make_scan(["(image only)"]), "application/pdf")},
-    ).json()
-    listed = client.get(f"/api/project-types/{type_id}/regulations/client").json()
+    uploaded = add_regulation(client, "client", "rules.pdf", ["(image only)"], scan=True)
+    listed = client.get("/api/regulations", params={"scope": "client"}).json()["documents"][0]
 
     assert uploaded["scanned_pages"] == 1
-    assert listed["documents"][0]["ocr_status"] == "done"
-    [row] = run_sql("SELECT text FROM regulation_documents")
+    assert (listed["ocr_status"], listed["index_status"]) == ("done", "done")
+    [row] = run_sql("SELECT text FROM regulation_passages")
     assert "Garantia minima este 10%" in row.text

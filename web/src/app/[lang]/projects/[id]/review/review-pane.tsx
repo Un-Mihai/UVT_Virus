@@ -138,6 +138,25 @@ export function ReviewPane({
                     {localized(finding.recommendation)}
                   </span>
                 </button>
+                {finding.regulation && (
+                  <div className="px-3 pb-2 text-sm text-ink-2">
+                    <span>{text.regulationLabel}</span>{" "}
+                    <a
+                      href={`/api/projects/${projectId}/regulations/${finding.regulation.document_id}/file#page=${finding.regulation.page}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={textLink}
+                    >
+                      {fill(text.regulation, {
+                        file: finding.regulation.filename,
+                        page: finding.regulation.page,
+                      })}
+                    </a>
+                    {finding.regulation.quote && (
+                      <q className="mt-1 block">{finding.regulation.quote}</q>
+                    )}
+                  </div>
+                )}
                 {canDecide && (
                   <FindingDecision
                     findingId={finding.id}

@@ -8,13 +8,28 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import undefer
 
 from app.auth import CurrentUser, Role, require_roles
-from app.deps import HasherDep, OrchestratorDep, SessionDep, SessionsDep, VisibilityDep
+from app.deps import (
+    HasherDep,
+    OrchestratorDep,
+    SessionDep,
+    SessionsDep,
+    SettingsDep,
+    VisibilityDep,
+)
 from app.documents.reading import project_still_reading
-from app.models import DocumentFinding, DocumentPage, ProjectDocument, VerificationRun
+from app.models import (
+    DocumentFinding,
+    DocumentPage,
+    ProjectDocument,
+    RegulationDocument,
+    VerificationRun,
+)
 from app.pdf import annotate_pdf
 from app.projects.access import visible_project
+from app.regulations.levels import documents_for
 from app.routes.problems import PROBLEMS
 from app.routes.projects import project_document
 from app.verification.reports import (
@@ -43,6 +58,15 @@ class RunOut(BaseModel):
     finished_at: datetime | None
 
 
+class RegulationCitation(BaseModel):
+    """The regulation passage a finding rests on."""
+
+    document_id: int
+    filename: str
+    page: int
+    quote: str | None  # the regulation's own words, when the model quoted them exactly
+
+
 class FindingOut(BaseModel):
     id: int
     anchor: str  # "finding-{id}": the highlight's id in the viewer and the annotated PDF
@@ -59,6 +83,8 @@ class FindingOut(BaseModel):
     page: int | None
     quote: str | None
     rects: list[list[float]]  # [x0, top, x1, bottom] in PDF points from the page's top-left
+    # None for findings on an admin's written rule (or from a run before regulations were cited).
+    regulation: RegulationCitation | None
     decision: Decision | None
     decision_note: str | None
     decided_by: str | None
@@ -94,6 +120,7 @@ async def start_verification(
     sessions: SessionsDep,
     orchestrator: OrchestratorDep,
     hasher: HasherDep,
+    settings: SettingsDep,
     user: CurrentUser,
     visibility: VisibilityDep,
 ) -> RunOut:
@@ -116,7 +143,14 @@ async def start_verification(
     run = VerificationRun(project_id=project_id, scope=visibility.scope, started_by=user.id)
     session.add(run)
     await session.commit()
-    background.add_task(run_verification, sessions, orchestrator, hasher, run.id)
+    background.add_task(
+        run_verification,
+        sessions,
+        orchestrator,
+        hasher,
+        settings.ai_embedding_model,
+        run.id,
+    )
     return _run_out(run)
 
 
@@ -192,6 +226,34 @@ async def annotated_document(
     )
 
 
+@router.get(
+    "/regulations/{regulation_id}/file",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {}}}},
+)
+async def cited_regulation(
+    project_id: int,
+    regulation_id: int,
+    session: SessionDep,
+    user: CurrentUser,
+    visibility: VisibilityDep,
+) -> Response:
+    """A regulation PDF that applies to this project in the caller's scope, so a finding's
+    citation opens in one click (append #page=N to land on the page)."""
+    project = await visible_project(session, user, project_id)
+    regulation = await session.scalar(
+        select(RegulationDocument)
+        .options(undefer(RegulationDocument.content))
+        .where(
+            RegulationDocument.id == regulation_id,
+            documents_for(project.id, project.project_type_id, visibility.scope),
+        )
+    )
+    if regulation is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Regulation not found for this project.")
+    return Response(regulation.content, media_type="application/pdf")
+
+
 def _run_out(run: VerificationRun) -> RunOut:
     stale = is_stale(run)
     return RunOut(
@@ -212,10 +274,38 @@ async def findings_out(
         select(ProjectDocument.id, ProjectDocument.filename).where(ProjectDocument.id.in_(ids))
     )
     names = dict(rows.all())
-    return [finding_out(finding, names.get(finding.document_id or 0)) for finding in findings]
+    regulations = await regulation_names(session, findings)
+    return [
+        finding_out(finding, names.get(finding.document_id or 0), regulations)
+        for finding in findings
+    ]
 
 
-def finding_out(finding: DocumentFinding, document_name: str | None) -> FindingOut:
+async def regulation_names(
+    session: AsyncSession, findings: Sequence[DocumentFinding]
+) -> dict[int, str]:
+    ids = {finding.regulation_document_id for finding in findings if finding.regulation_document_id}
+    if not ids:
+        return {}
+    rows = await session.execute(
+        select(RegulationDocument.id, RegulationDocument.filename).where(
+            RegulationDocument.id.in_(ids)
+        )
+    )
+    return dict(rows.all())
+
+
+def finding_out(
+    finding: DocumentFinding, document_name: str | None, regulations: dict[int, str]
+) -> FindingOut:
+    regulation = None
+    if finding.regulation_document_id in regulations and finding.regulation_page:
+        regulation = RegulationCitation(
+            document_id=finding.regulation_document_id,
+            filename=regulations[finding.regulation_document_id],
+            page=finding.regulation_page,
+            quote=finding.regulation_quote,
+        )
     return FindingOut(
         id=finding.id,
         anchor=anchor(finding),
@@ -231,6 +321,7 @@ def finding_out(finding: DocumentFinding, document_name: str | None) -> FindingO
         page=finding.page,
         quote=finding.quote,
         rects=finding.rects,
+        regulation=regulation,
         decision=Decision(finding.decision) if finding.decision else None,
         decision_note=finding.decision_note,
         decided_by=finding.decided_by,

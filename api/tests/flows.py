@@ -25,10 +25,36 @@ def create_project_type(client: TestClient, code: str = "infra") -> int:
     return project_id
 
 
-def add_rule(client: TestClient, project_type_id: int, scope: str, **rule: Any) -> dict[str, Any]:
+def add_rule(
+    client: TestClient, scope: str, project_type_id: int | None = None, **rule: Any
+) -> dict[str, Any]:
+    """A written rule, as an admin; no project type means every project."""
     as_user(client, "admin")
+    body = {"scope": scope, "project_type_id": project_type_id} | rule
+    response = client.post("/api/regulations/rules", json=body)
+    assert response.status_code == 201, response.text
+    created: dict[str, Any] = response.json()
+    return created
+
+
+def add_regulation(
+    client: TestClient,
+    scope: str,
+    name: str,
+    *pages: list[str],
+    project_type_id: int | None = None,
+    project_id: int | None = None,
+    scan: bool = False,
+) -> dict[str, Any]:
+    """A regulation PDF, as an admin, at one level; no type and no project means every project.
+
+    TestClient runs the background processing (OCR, passages, embeddings) before returning."""
+    as_user(client, "admin")
+    level = {"scope": scope, "project_type_id": project_type_id, "project_id": project_id}
     response = client.post(
-        f"/api/project-types/{project_type_id}/regulations/{scope}/rules", json=rule
+        "/api/regulations/documents",
+        params={key: value for key, value in level.items() if value is not None},
+        files={"file": (name, make_scan(*pages) if scan else make_pdf(*pages), "application/pdf")},
     )
     assert response.status_code == 201, response.text
     created: dict[str, Any] = response.json()

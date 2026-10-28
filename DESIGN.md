@@ -171,10 +171,13 @@ Hairline rows, Ink Faint headers, tabular numbers right-aligned, durations and m
 `web/src/lib/format.ts`.
 
 ### Admin regulation editor (`/admin/regulations`)
-Administrators pick a funding project type, then switch cleanly between two rule sets: the
+Administrators pick all projects, a funding project type, or one project, then switch between two rule sets: the
 **Client Verification Rules** (the applicant's pre-submission regulation) and the **Reviewer
 Verification Rules** (the internal audit regulation). Only one set is editable at a time and the
 active one is named in the page.
+Project-specific requirements come from uploaded regulation PDFs. Global and project-type levels
+also accept requirements written in natural language. PDF rows show OCR and indexing status and
+offer reprocessing after failure.
 
 ### Document review workspace (`/projects/[id]`)
 A two-pane ledger split:
@@ -184,6 +187,8 @@ A two-pane ledger split:
    status (`bad` or `warn`, always with its word), the confidence as a tabular percentage
    (`92%`), the document name, the page number, the exact quote, the error reason and the change
    recommendation.
+   PDF-derived findings also show the regulation filename, page and verified quote, with a link
+   that opens the source PDF at that page.
 2. **Right pane, highlighted document viewer.** Renders the highlighted file provided by the
    backend, in context.
 

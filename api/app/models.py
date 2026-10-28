@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, ClassVar
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     CheckConstraint,
     DateTime,
@@ -18,9 +19,9 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, deferred, mapped_column, rel
 
 from app.vocabulary import (
     Decision,
+    IndexStatus,
     OcrStatus,
     ProjectStatus,
-    RuleKind,
     RunStatus,
     Scope,
     Severity,
@@ -68,14 +69,22 @@ class ProjectType(Base):
 
 
 class RegulationDocument(Base):
-    """A regulation file an admin uploaded for one project type and one scope."""
+    """A regulation PDF an admin uploaded for one scope, at one level: every project (neither
+    a type nor a project), every project of a type, or one project."""
 
     __tablename__ = "regulation_documents"
-    __table_args__ = (CheckConstraint(check_in("verification_scope", Scope), name="scope"),)
+    __table_args__ = (
+        CheckConstraint(check_in("verification_scope", Scope), name="scope"),
+        CheckConstraint("project_type_id IS NULL OR project_id IS NULL", name="one_level"),
+        CheckConstraint(check_in("index_status", IndexStatus), name="index_status"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    project_type_id: Mapped[int] = mapped_column(
+    project_type_id: Mapped[int | None] = mapped_column(
         ForeignKey("project_types.id", ondelete="CASCADE"), index=True
+    )
+    project_id: Mapped[int | None] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), index=True
     )
     verification_scope: Mapped[str]
     filename: Mapped[str]
@@ -87,31 +96,55 @@ class RegulationDocument(Base):
     # Pages without a text layer, and how reading them went (None when there are none).
     scanned_pages: Mapped[int] = mapped_column(default=0, server_default="0")
     ocr_status: Mapped[str | None]
+    # Passages split, embedded and searchable (app/regulations/processing.py).
+    index_status: Mapped[str] = mapped_column(
+        default=IndexStatus.PENDING, server_default=IndexStatus.PENDING
+    )
+    index_error: Mapped[str | None]
+
+
+class RegulationPassage(Base):
+    """A piece of a regulation (a page, or part of a long one) with its embedding, so a check
+    retrieves the passages that matter for each document."""
+
+    __tablename__ = "regulation_passages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    regulation_document_id: Mapped[int] = mapped_column(
+        ForeignKey("regulation_documents.id", ondelete="CASCADE"), index=True
+    )
+    page: Mapped[int]
+    text: Mapped[str] = mapped_column(Text)
+    # shortcut: no fixed dimension and no HNSW index, so any embedding model fits and search is
+    # exact; add Vector(dim) with an HNSW index when regulations reach tens of thousands of pages.
+    embedding: Mapped[list[float] | None] = mapped_column(Vector())
+    embedding_model: Mapped[str | None]  # searches compare only vectors from the same model
 
 
 class RegulationRule(Base):
-    """One rule of a scope's rule set: a deterministic check or a clause the AI judges."""
+    """A requirement an admin wrote in plain words, for every project (no type) or every
+    project of one type; the model judges documents against it like a regulation passage."""
 
     __tablename__ = "regulation_rules"
     __table_args__ = (
         CheckConstraint(check_in("verification_scope", Scope), name="scope"),
-        CheckConstraint(check_in("kind", RuleKind), name="kind"),
         CheckConstraint(check_in("severity", Severity), name="severity"),
-        CheckConstraint("kind <> 'check' OR check_id IS NOT NULL", name="check_needs_id"),
-        UniqueConstraint("project_type_id", "verification_scope", "code"),
+        UniqueConstraint(
+            "project_type_id",
+            "verification_scope",
+            "code",
+            postgresql_nulls_not_distinct=True,
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    project_type_id: Mapped[int] = mapped_column(
+    project_type_id: Mapped[int | None] = mapped_column(
         ForeignKey("project_types.id", ondelete="CASCADE"), index=True
     )
     verification_scope: Mapped[str]
     code: Mapped[str]
     title: Mapped[str]
-    description: Mapped[str] = mapped_column(default="")
-    kind: Mapped[str]
-    check_id: Mapped[str | None]
-    params: Mapped[dict[str, Any]] = mapped_column(default=dict)
+    description: Mapped[str] = mapped_column(default="")  # the requirement, in plain words
     severity: Mapped[str] = mapped_column(default=Severity.BAD)
     active: Mapped[bool] = mapped_column(default=True)
 
@@ -262,6 +295,12 @@ class DocumentFinding(Base):
     rects: Mapped[list[Any]] = mapped_column(default=list)
     # The evidence was read by OCR; `confidence` is then capped at the words' OCR confidence.
     ocr: Mapped[bool] = mapped_column(default=False, server_default=false())
+    # The regulation passage the finding rests on; None for findings from an admin's own rule.
+    regulation_document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("regulation_documents.id", ondelete="SET NULL")
+    )
+    regulation_page: Mapped[int | None]
+    regulation_quote: Mapped[str | None]
     decision: Mapped[str | None]
     decision_note: Mapped[str | None]
     decided_by: Mapped[str | None]

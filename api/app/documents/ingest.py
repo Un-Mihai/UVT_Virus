@@ -21,7 +21,7 @@ from app.models import (
 )
 from app.pdf import PageContent, PdfReadError, read_pdf
 from app.personal_data import IdentifierHasher, detect_all
-from app.vocabulary import OcrStatus, Scope
+from app.vocabulary import IndexStatus, OcrStatus, Scope
 
 
 class UploadRejectedError(ValueError):
@@ -129,20 +129,25 @@ def regulation_text(pages: Iterable[tuple[int, str]]) -> str:
 
 
 def new_regulation_document(
-    project_type_id: int,
     scope: Scope,
     filename: str,
     content: bytes,
     pages: list[PageContent],
     uploaded_by: str,
+    *,
+    project_type_id: int | None,
+    project_id: int | None,
     ocr_available: bool,
 ) -> RegulationDocument:
+    """A regulation for every project (no type, no project), a project type, or one project;
+    app/regulations/processing.py then reads its scans and indexes its passages."""
     scanned = sum(page.is_scan for page in pages)
     status = None
     if scanned:
         status = OcrStatus.PENDING if ocr_available else OcrStatus.UNAVAILABLE
     return RegulationDocument(
         project_type_id=project_type_id,
+        project_id=project_id,
         verification_scope=scope,
         filename=filename,
         sha256=hashlib.sha256(content).hexdigest(),
@@ -151,4 +156,5 @@ def new_regulation_document(
         uploaded_by=uploaded_by,
         scanned_pages=scanned,
         ocr_status=status,
+        index_status=IndexStatus.PENDING,
     )

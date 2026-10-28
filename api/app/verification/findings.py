@@ -18,6 +18,15 @@ class Evidence:
 
 
 @dataclass(frozen=True)
+class RegulationRef:
+    """The regulation passage a finding rests on."""
+
+    document_id: int  # RegulationDocument.id
+    page: int
+    quote: str | None  # the passage's own words, when the model quoted them exactly
+
+
+@dataclass(frozen=True)
 class FindingDraft:
     """What an agent reports; the orchestrator adds highlight boxes and stores it."""
 
@@ -28,6 +37,7 @@ class FindingDraft:
     reason: LocalizedText
     recommendation: LocalizedText
     evidence: Evidence | None = None  # None: about the form, or about something missing
+    regulation: RegulationRef | None = None  # None: an admin's written rule, or no regulation
 
 
 @dataclass(frozen=True)

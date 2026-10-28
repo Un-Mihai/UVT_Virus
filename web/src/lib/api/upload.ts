@@ -16,18 +16,18 @@ export function uploadProjectDocument(projectId: number, file: File) {
   });
 }
 
-/** Uploads a regulation PDF to one rule set of a project type (Client Components only). */
-export function uploadRegulationDocument(
-  projectTypeId: number,
-  scope: "client" | "reviewer",
-  file: File,
-) {
-  return api.POST(
-    "/api/project-types/{project_type_id}/regulations/{scope}/documents",
-    {
-      params: { path: { project_type_id: projectTypeId, scope } },
-      body: { file },
-      bodySerializer: asFormData,
-    },
-  );
+/** Where a regulation applies: no type and no project means every project. */
+export type RegulationLevel = {
+  scope: "client" | "reviewer";
+  project_type_id?: number;
+  project_id?: number;
+};
+
+/** Uploads a regulation PDF at one level (Client Components only). */
+export function uploadRegulationDocument(level: RegulationLevel, file: File) {
+  return api.POST("/api/regulations/documents", {
+    params: { query: level },
+    body: { file },
+    bodySerializer: asFormData,
+  });
 }

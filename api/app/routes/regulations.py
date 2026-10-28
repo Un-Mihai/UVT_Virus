@@ -1,4 +1,9 @@
-"""Admin: regulation documents and rule sets per project type, one set per verification scope."""
+"""Admin: regulation PDFs and written rules, each for the client or the reviewer scope.
+
+Levels: a regulation PDF applies to every project (no type, no project), to every project of a
+type, or to one project. Written rules apply to every project or to a type. A check uses all
+the levels that reach the project (app/regulations/levels.py).
+"""
 
 from datetime import datetime
 from typing import Annotated, Any
@@ -19,14 +24,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import undefer
 
 from app.auth import Role, User, require_roles
-from app.deps import OcrDep, SessionDep, SessionsDep, SettingsDep
+from app.deps import AIDep, OcrDep, SessionDep, SessionsDep, SettingsDep
 from app.documents.ingest import new_regulation_document, read_upload
-from app.documents.ocr_jobs import read_scanned_regulation
-from app.models import RegulationDocument, RegulationRule
+from app.models import Project, RegulationDocument, RegulationRule
+from app.regulations.processing import process_regulation
 from app.routes.problems import PROBLEMS
 from app.routes.project_types import existing_project_type
-from app.verification.checks import list_checks, validated_params
-from app.vocabulary import OcrStatus, RuleKind, Scope, Severity
+from app.verification.checks import list_checks
+from app.vocabulary import IndexStatus, OcrStatus, ProjectStatus, Scope, Severity
 
 router = APIRouter(
     prefix="/api",
@@ -38,6 +43,8 @@ Admin = Annotated[User, Depends(require_roles(Role.ADMIN))]
 
 
 class CheckOut(BaseModel):
+    """A code check the model may ask for while it compares documents with regulations."""
+
     id: str
     description: dict[str, str]  # {"en": ..., "ro": ...}
     params_schema: dict[str, Any]
@@ -51,26 +58,30 @@ class RegulationDocumentOut(BaseModel):
     sha256: str
     uploaded_by: str
     created_at: datetime
+    project_type_id: int | None  # with project_id: both None means every project
+    project_id: int | None
     scanned_pages: int  # pages without a text layer
     ocr_status: OcrStatus | None  # how reading them went; None when there are none
+    # Whether the passages are embedded and searchable; checks fall back to reading the
+    # regulation from its start when they are not.
+    index_status: IndexStatus
+    index_error: str | None
 
 
 class RuleIn(BaseModel):
+    """A requirement in plain words; the model judges documents against it."""
+
+    scope: Scope
+    project_type_id: int | None = None  # None: every project
     code: str
     title: str
-    description: str = ""
-    kind: RuleKind
-    check_id: str | None = None
-    params: dict[str, Any] = {}
+    description: str
     severity: Severity = Severity.BAD
-    active: bool = True
 
 
 class RuleUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
-    check_id: str | None = None
-    params: dict[str, Any] | None = None
     severity: Severity | None = None
     active: bool | None = None
 
@@ -79,26 +90,51 @@ class RuleOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    project_type_id: int | None
     code: str
     title: str
     description: str
-    kind: RuleKind
-    check_id: str | None
-    params: dict[str, Any]
     severity: Severity
     active: bool
 
 
 class RegulationSet(BaseModel):
-    project_type_id: int
+    """What one level holds for one scope (not what it inherits from wider levels)."""
+
     scope: Scope
+    project_type_id: int | None
+    project_id: int | None
     documents: list[RegulationDocumentOut]
-    rules: list[RuleOut]
+    rules: list[RuleOut]  # always empty for a single project: projects get regulation PDFs
+
+
+class AdminProjectOut(BaseModel):
+    """A project an admin can attach regulations to."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    project_type_id: int
+    status: ProjectStatus
+
+
+async def _check_level(
+    session: AsyncSession, project_type_id: int | None, project_id: int | None
+) -> None:
+    if project_type_id is not None and project_id is not None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Choose a project type or a project, not both."
+        )
+    if project_type_id is not None:
+        await existing_project_type(session, project_type_id)
+    if project_id is not None and await session.get(Project, project_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Project not found.")
 
 
 @router.get("/checks")
 async def checks() -> list[CheckOut]:
-    """The deterministic checks a rule of kind "check" can name, with their params."""
+    """The code checks the model may ask for while comparing documents with regulations."""
     return [
         CheckOut(
             id=spec.id,
@@ -109,91 +145,105 @@ async def checks() -> list[CheckOut]:
     ]
 
 
-@router.get("/project-types/{project_type_id}/regulations/{scope}")
-async def regulation_set(project_type_id: int, scope: Scope, session: SessionDep) -> RegulationSet:
-    await existing_project_type(session, project_type_id)
+@router.get("/admin/projects")
+async def admin_projects(session: SessionDep) -> list[AdminProjectOut]:
+    """Every project, newest first, so an admin can attach regulations to one."""
+    rows = await session.scalars(select(Project).order_by(Project.id.desc()))
+    return [AdminProjectOut.model_validate(row) for row in rows]
+
+
+@router.get("/regulations")
+async def regulation_set(
+    session: SessionDep,
+    scope: Scope,
+    project_type_id: int | None = None,
+    project_id: int | None = None,
+) -> RegulationSet:
+    """The regulation PDFs and written rules of one level; no type and no project means every
+    project."""
+    await _check_level(session, project_type_id, project_id)
     documents = await session.scalars(
         select(RegulationDocument)
         .where(
-            RegulationDocument.project_type_id == project_type_id,
             RegulationDocument.verification_scope == scope,
+            RegulationDocument.project_type_id.is_not_distinct_from(project_type_id),
+            RegulationDocument.project_id.is_not_distinct_from(project_id),
         )
         .order_by(RegulationDocument.id)
     )
-    rules = await session.scalars(
-        select(RegulationRule)
-        .where(
-            RegulationRule.project_type_id == project_type_id,
-            RegulationRule.verification_scope == scope,
+    rules: list[RuleOut] = []
+    if project_id is None:
+        rows = await session.scalars(
+            select(RegulationRule)
+            .where(
+                RegulationRule.verification_scope == scope,
+                RegulationRule.project_type_id.is_not_distinct_from(project_type_id),
+            )
+            .order_by(RegulationRule.id)
         )
-        .order_by(RegulationRule.id)
-    )
+        rules = [RuleOut.model_validate(row) for row in rows]
     return RegulationSet(
-        project_type_id=project_type_id,
         scope=scope,
+        project_type_id=project_type_id,
+        project_id=project_id,
         documents=[RegulationDocumentOut.model_validate(row) for row in documents],
-        rules=[RuleOut.model_validate(row) for row in rules],
+        rules=rules,
     )
 
 
-@router.post(
-    "/project-types/{project_type_id}/regulations/{scope}/documents",
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("/regulations/documents", status_code=status.HTTP_201_CREATED)
 async def upload_regulation(
-    project_type_id: int,
-    scope: Scope,
     file: UploadFile,
     background: BackgroundTasks,
     session: SessionDep,
     sessions: SessionsDep,
     settings: SettingsDep,
+    ai: AIDep,
     ocr: OcrDep,
     admin: Admin,
+    scope: Scope,
+    project_type_id: int | None = None,
+    project_id: int | None = None,
 ) -> RegulationDocumentOut:
-    """Stores the regulation; scanned pages are then read by OCR in the background."""
-    await existing_project_type(session, project_type_id)
+    """Stores a regulation PDF; it is then read (OCR for scans), split into passages and
+    embedded in the background, so checks can retrieve what applies to each document."""
+    await _check_level(session, project_type_id, project_id)
     content = await file.read()
     pages = await read_upload(content, settings.max_upload_mb)
     document = new_regulation_document(
-        project_type_id,
         scope,
         file.filename or "regulation.pdf",
         content,
         pages,
         admin.id,
+        project_type_id=project_type_id,
+        project_id=project_id,
         ocr_available=ocr is not None,
     )
     session.add(document)
     await session.commit()
-    if ocr and document.ocr_status == OcrStatus.PENDING:
-        background.add_task(read_scanned_regulation, sessions, ocr, settings, document.id)
+    background.add_task(process_regulation, sessions, ai, ocr, settings, document.id)
     return RegulationDocumentOut.model_validate(document)
 
 
-@router.post("/regulation-documents/{document_id}/read-scans", status_code=status.HTTP_202_ACCEPTED)
-async def read_regulation_scans_again(
+@router.post("/regulation-documents/{document_id}/process", status_code=status.HTTP_202_ACCEPTED)
+async def process_regulation_again(
     document_id: int,
     background: BackgroundTasks,
     session: SessionDep,
     sessions: SessionsDep,
     settings: SettingsDep,
+    ai: AIDep,
     ocr: OcrDep,
 ) -> RegulationDocumentOut:
-    """Reads the regulation's scanned pages once more, after a failure or a stalled reading."""
-    document = await session.get(RegulationDocument, document_id)
-    if document is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Regulation document not found.")
-    if ocr is None:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            "OCR is switched off (OCR_ENGINE=none), so scanned pages cannot be read.",
-        )
-    if not document.scanned_pages:
-        raise HTTPException(status.HTTP_409_CONFLICT, "This regulation has no scanned pages.")
-    document.ocr_status = OcrStatus.PENDING
+    """Reads, splits and embeds the regulation once more: after a failure, a stalled job, or
+    a change of embedding model or AI provider."""
+    document = await _existing_regulation(session, document_id)
+    document.index_status, document.index_error = IndexStatus.PENDING, None
+    if document.scanned_pages and ocr is not None:
+        document.ocr_status = OcrStatus.PENDING
     await session.commit()
-    background.add_task(read_scanned_regulation, sessions, ocr, settings, document.id)
+    background.add_task(process_regulation, sessions, ai, ocr, settings, document.id)
     return RegulationDocumentOut.model_validate(document)
 
 
@@ -213,33 +263,28 @@ async def regulation_file(document_id: int, session: SessionDep) -> Response:
 
 @router.delete("/regulation-documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_regulation(document_id: int, session: SessionDep) -> None:
-    document = await session.get(RegulationDocument, document_id)
-    if document is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Regulation document not found.")
-    await session.delete(document)
+    await session.delete(await _existing_regulation(session, document_id))
     await session.commit()
 
 
-@router.post(
-    "/project-types/{project_type_id}/regulations/{scope}/rules",
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_rule(
-    project_type_id: int, scope: Scope, body: RuleIn, session: SessionDep
-) -> RuleOut:
-    await existing_project_type(session, project_type_id)
-    _validate(body.kind, body.check_id, body.params)
+@router.post("/regulations/rules", status_code=status.HTTP_201_CREATED)
+async def create_rule(body: RuleIn, session: SessionDep) -> RuleOut:
+    if body.project_type_id is not None:
+        await existing_project_type(session, body.project_type_id)
     rule = RegulationRule(
-        project_type_id=project_type_id, verification_scope=scope, **body.model_dump()
+        project_type_id=body.project_type_id,
+        verification_scope=body.scope,
+        code=body.code,
+        title=body.title,
+        description=body.description,
+        severity=body.severity,
     )
-    if body.kind == RuleKind.AI:
-        rule.check_id = None
     session.add(rule)
     try:
         await session.commit()
     except IntegrityError as error:
         raise HTTPException(
-            status.HTTP_409_CONFLICT, f"The {scope} rule set already has a rule {body.code!r}."
+            status.HTTP_409_CONFLICT, f"This rule set already has a rule {body.code!r}."
         ) from error
     return RuleOut.model_validate(rule)
 
@@ -249,7 +294,6 @@ async def update_rule(rule_id: int, body: RuleUpdate, session: SessionDep) -> Ru
     rule = await _existing_rule(session, rule_id)
     for name, value in body.model_dump(exclude_unset=True).items():
         setattr(rule, name, value)
-    _validate(RuleKind(rule.kind), rule.check_id, rule.params)
     await session.commit()
     return RuleOut.model_validate(rule)
 
@@ -260,10 +304,11 @@ async def delete_rule(rule_id: int, session: SessionDep) -> None:
     await session.commit()
 
 
-def _validate(kind: RuleKind, check_id: str | None, params: dict[str, Any]) -> None:
-    """A check rule must name a registered check with valid params (InvalidCheckError -> 422)."""
-    if kind == RuleKind.CHECK:
-        validated_params(check_id, params)
+async def _existing_regulation(session: AsyncSession, document_id: int) -> RegulationDocument:
+    document = await session.get(RegulationDocument, document_id)
+    if document is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Regulation document not found.")
+    return document
 
 
 async def _existing_rule(session: AsyncSession, rule_id: int) -> RegulationRule:

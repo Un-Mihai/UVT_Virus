@@ -6,8 +6,8 @@ from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, undefer
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.orm import selectinload
 
 from app.models import (
     DocumentPage,
@@ -19,8 +19,10 @@ from app.models import (
 )
 from app.pdf import Word
 from app.personal_data import IdentifierHasher
+from app.regulations.levels import documents_for, rules_for
+from app.regulations.search import PassageSearch, PgvectorPassageSearch
 from app.verification.facts import PageFacts
-from app.vocabulary import RuleKind, Scope, Severity
+from app.vocabulary import Scope, Severity
 
 
 @dataclass
@@ -61,12 +63,12 @@ class IdentifierView:
 
 @dataclass(frozen=True)
 class RuleView:
+    """A requirement findings are reported against: an admin's written rule, or the code
+    check the model asked for on behalf of a regulation passage."""
+
     code: str
     title: str
     description: str
-    kind: RuleKind
-    check_id: str | None
-    params: dict[str, Any]
     severity: Severity
 
 
@@ -78,8 +80,8 @@ class VerificationContext:
     scope: Scope
     documents: list[DocumentView]
     identifiers: list[IdentifierView]
-    rules: list[RuleView]
-    regulation_text: str
+    rules: list[RuleView]  # the admins' written rules that apply
+    passages: PassageSearch  # the regulation passages that apply, searchable
     hasher: IdentifierHasher
     notes: dict[str, Any] = field(default_factory=dict)  # free space for agents in later stages
 
@@ -92,13 +94,16 @@ class VerificationContext:
                 if page.facts is not None:
                     yield document, page, page.facts
 
-    def rules_of(self, kind: RuleKind) -> list[RuleView]:
-        return [rule for rule in self.rules if rule.kind == kind]
-
 
 async def load_context(
-    session: AsyncSession, project_id: int, scope: Scope, hasher: IdentifierHasher
+    session: AsyncSession,
+    sessions: async_sessionmaker[AsyncSession],
+    project_id: int,
+    scope: Scope,
+    hasher: IdentifierHasher,
+    embedding_model: str,
 ) -> VerificationContext:
+    """The project with its documents, and the regulations and written rules that apply to it."""
     project = await session.get_one(
         Project,
         project_id,
@@ -106,21 +111,13 @@ async def load_context(
     )
     rules = await session.scalars(
         select(RegulationRule)
-        .where(
-            RegulationRule.project_type_id == project.project_type_id,
-            RegulationRule.verification_scope == scope,
-            RegulationRule.active,
-        )
-        .order_by(RegulationRule.id)
+        .where(rules_for(project.project_type_id, scope))
+        .order_by(RegulationRule.project_type_id.nulls_first(), RegulationRule.id)
     )
-    regulations = await session.scalars(
-        select(RegulationDocument)
-        .options(undefer(RegulationDocument.text))
-        .where(
-            RegulationDocument.project_type_id == project.project_type_id,
-            RegulationDocument.verification_scope == scope,
+    regulation_ids = await session.scalars(
+        select(RegulationDocument.id).where(
+            documents_for(project.id, project.project_type_id, scope)
         )
-        .order_by(RegulationDocument.id)
     )
     identifiers = await session.scalars(
         select(PersonalIdentifier)
@@ -147,20 +144,10 @@ async def load_context(
             for row in identifiers
         ],
         rules=[
-            RuleView(
-                rule.code,
-                rule.title,
-                rule.description,
-                RuleKind(rule.kind),
-                rule.check_id,
-                rule.params,
-                Severity(rule.severity),
-            )
+            RuleView(rule.code, rule.title, rule.description, Severity(rule.severity))
             for rule in rules
         ],
-        regulation_text="\n\n".join(
-            f"=== {regulation.filename} ===\n{regulation.text}" for regulation in regulations
-        ),
+        passages=PgvectorPassageSearch(sessions, list(regulation_ids), embedding_model),
         hasher=hasher,
     )
 
