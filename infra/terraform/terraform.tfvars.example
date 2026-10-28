@@ -1,0 +1,25 @@
+# Copy to terraform.tfvars (git-ignored) and fill in. Every option is described in variables.tf.
+
+subscription_id = "00000000-0000-0000-0000-000000000000" # az account show --query id -o tsv
+name            = "hack"
+
+# Student subscriptions allow only a few regions; see docs/deploy-azure.md to list yours.
+location    = "swedencentral"
+ai_location = "swedencentral"
+
+# Turn on for the demo day so the first request is not a cold start; off afterwards.
+keep_warm = false
+
+# Optional: a teammate's Azure AI account with the same deployment names, used when ours fails
+# or runs out of credit.
+# ai_fallback_base_url = "https://ai-xxxxx.openai.azure.com/openai/v1/"
+# ai_fallback_api_key  = "..."
+
+# Optional: use organiser-provided tokens or another provider instead of creating Azure AI.
+# create_ai   = false
+# ai_base_url = "https://api.openai.com/v1"
+# ai_api_key  = "..."
+
+# Optional: email alerts at 50/80/100% of a monthly budget (may not work on student subscriptions).
+# budget_alert_email = "you@example.com"
+# budget_amount_usd  = 40

@@ -1,0 +1,132 @@
+# Local stack: `make up` (also after every pull), then open http://localhost:3000
+# Settings come from .env (copy .env.example). Host ports are configurable there too, and they
+# listen on 127.0.0.1 only, so nobody else on the network (hackathon Wi-Fi) can reach them.
+name: hackathon
+
+services:
+  db:
+    image: pgvector/pgvector:0.8.7-pg17
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Creates the test and Keycloak databases when they are missing (also in volumes made before
+  # they existed), then exits.
+  db-setup:
+    image: pgvector/pgvector:0.8.7-pg17
+    # The image declares a data volume; without this, every down would leave an empty one behind.
+    tmpfs: /var/lib/postgresql/data
+    environment:
+      PGHOST: db
+      PGUSER: app
+      PGPASSWORD: app
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        for name in app_test keycloak; do
+        psql -d app -tAc "SELECT 1 FROM pg_database WHERE datname = '$$name'" | grep -q 1
+        || psql -d app -c "CREATE DATABASE $$name"; done
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Sign-in. Admin console: http://localhost:8080/admin (keycloak / keycloak).
+  # App users from infra/keycloak/realm-app.json: reviewer and admin, password "demo".
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: keycloak
+      KC_BOOTSTRAP_ADMIN_PASSWORD: keycloak
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/keycloak
+      KC_DB_USERNAME: app
+      KC_DB_PASSWORD: app
+      # Browsers and tokens use this public address; containers reach Keycloak at keycloak:8080.
+      KC_HOSTNAME: http://localhost:${KEYCLOAK_PORT:-8080}
+      KC_HEALTH_ENABLED: "true"
+      # Placeholders in realm-app.json
+      KC_APP_URL: http://localhost:${WEB_PORT:-3000}
+      KC_WEB_CLIENT_SECRET: local-web-client-secret
+      KC_DEMO_PASSWORD: demo
+    ports:
+      - "127.0.0.1:${KEYCLOAK_PORT:-8080}:8080"
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      db-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && grep -q UP <&3"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+
+  api:
+    build:
+      context: ./api
+      target: dev
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app@db:5432/app
+      TEST_DATABASE_URL: postgresql+asyncpg://app:app@db:5432/app_test
+      AUTH_ISSUER: http://localhost:${KEYCLOAK_PORT:-8080}/realms/app
+      AUTH_JWKS_URL: http://keycloak:8080/realms/app/protocol/openid-connect/certs
+    extra_hosts:
+      # Lets the API reach a model server on your machine (Ollama) on Linux too.
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    volumes:
+      - ./api:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup: # tests use app_test
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  web:
+    build:
+      context: ./web
+      target: dev
+    # Only what the web app needs: it never sees the AI keys.
+    environment:
+      API_URL: http://api:8000
+      APP_URL: http://localhost:${WEB_PORT:-3000}
+      AUTH_ISSUER: http://localhost:${KEYCLOAK_PORT:-8080}/realms/app
+      AUTH_INTERNAL_URL: http://keycloak:8080
+      AUTH_CLIENT_ID: web
+      AUTH_CLIENT_SECRET: local-web-client-secret
+      AUTH_SECRET: ${AUTH_SECRET:-local-development-only-secret-change-me}
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    volumes:
+      - ./web:/app
+      # The container's own Linux node_modules and build cache, not the host's. `make up`
+      # replaces them with fresh copies from the image, so pulled dependencies arrive.
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      # Started, not healthy: /status must come up to explain an API that fails.
+      api:
+        condition: service_started
+
+volumes:
+  db-data:

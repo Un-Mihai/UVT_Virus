@@ -1,0 +1,74 @@
+{
+  "realm": "app",
+  "displayName": "Hackathon starter",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 36000,
+  "ssoSessionMaxLifespan": 43200,
+  "roles": {
+    "realm": [
+      { "name": "reviewer", "description": "Uses the product. What each role may do is an open decision in PRODUCT.md" },
+      { "name": "admin", "description": "Manages the product" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "web",
+      "name": "Web app",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${KC_WEB_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["${KC_APP_URL}/auth/callback"],
+      "webOrigins": ["${KC_APP_URL}"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${KC_APP_URL}/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "reviewer",
+      "email": "reviewer@example.com",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Reviewer",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KC_DEMO_PASSWORD}", "temporary": false }],
+      "realmRoles": ["reviewer"]
+    },
+    {
+      "username": "admin",
+      "email": "admin@example.com",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Admin",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KC_DEMO_PASSWORD}", "temporary": false }],
+      "realmRoles": ["reviewer", "admin"]
+    }
+  ]
+}

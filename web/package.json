@@ -1,0 +1,46 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint --max-warnings 0",
+    "typecheck": "next typegen && tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "knip": "knip",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run knip",
+    "gen:api": "node scripts/gen-api.mjs && prettier --write src/lib/api/schema.d.ts"
+  },
+  "dependencies": {
+    "jose": "^6.2.13",
+    "next": "16.4.3",
+    "openapi-fetch": "^0.17.0",
+    "openid-client": "^6.8.8",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4.3.3",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^10.13.0",
+    "eslint-config-next": "16.4.3",
+    "knip": "^6.43.0",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.9.10",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}

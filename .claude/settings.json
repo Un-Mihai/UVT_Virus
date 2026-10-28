@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(make doctor)",
+      "Bash(bash scripts/setup.sh --check)",
+      "Bash(make check)",
+      "Bash(make check-api)",
+      "Bash(make check-web)",
+      "Bash(make check-ui)",
+      "Bash(make check-ui *)",
+      "Bash(make fix)",
+      "Bash(make up)",
+      "Bash(make logs)",
+      "Bash(make gen-api)",
+      "Bash(make migration *)",
+      "Bash(make criteria)",
+      "Bash(python3 scripts/judging_criteria.py)",
+      "Bash(python3 scripts/judging_criteria.py --show)",
+      "Bash(python3 scripts/judging_criteria.py --check)",
+      "Bash(make sync-agents)",
+      "Bash(docker compose ps *)",
+      "Bash(docker compose logs *)",
+      "Bash(docker compose up *)",
+      "Bash(docker compose exec api poe check)",
+      "Bash(docker compose exec api poe lint)",
+      "Bash(docker compose exec api poe typecheck)",
+      "Bash(docker compose exec api poe test)",
+      "Bash(docker compose exec api pytest *)",
+      "Bash(docker compose exec api alembic upgrade head)",
+      "Bash(docker compose exec api alembic current)",
+      "Bash(docker compose exec api alembic history *)",
+      "Bash(docker compose exec web npm run check)",
+      "Bash(docker compose exec web npm run lint)",
+      "Bash(docker compose exec web npm run typecheck)",
+      "Bash(docker compose exec web npm run test)",
+      "Bash(docker compose exec web npm run build)",
+      "Bash(python3 scripts/sync_agents.py --check)",
+      "Bash(terraform -chdir=infra/terraform fmt *)",
+      "Bash(terraform -chdir=infra/terraform validate *)",
+      "Bash(terraform -chdir=infra/terraform test *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./infra/terraform/terraform.tfvars)",
+      "Read(./infra/terraform/terraform.tfstate)",
+      "Read(./infra/terraform/terraform.tfstate.backup)",
+      "Bash(terraform -chdir=infra/terraform destroy *)",
+      "Bash(terraform destroy *)",
+      "Bash(az group delete *)",
+      "Bash(docker compose exec api alembic downgrade *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" ] || \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" hook",
+            "timeout": 5,
+            "statusMessage": "Preparing build session"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" ] || \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" hook",
+            "timeout": 5,
+            "statusMessage": "Checking UI changes"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" ] || \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" hook",
+            "timeout": 30,
+            "statusMessage": "Design deep pass"
+          }
+        ]
+      }
+    ]
+  }
+}

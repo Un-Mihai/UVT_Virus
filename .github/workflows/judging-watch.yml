@@ -1,0 +1,44 @@
+name: Judging criteria watch
+
+# Re-reads the organiser's pages every three hours and opens an issue when the rules, the judging
+# criteria or the hackathon schedule change, so the team updates docs/judging/rubric.md in time.
+on:
+  schedule:
+    - cron: "23 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Compare the official pages with docs/judging/sources.lock
+        id: check
+        run: |
+          set +e
+          python3 scripts/judging_criteria.py --check > report.txt 2>&1
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+          cat report.txt
+      - name: Open an issue when something changed
+        if: steps.check.outputs.status == '3'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Hackathon rules, criteria or schedule changed"
+          open=$(gh issue list --state open --json title --jq ".[] | select(.title == \"$title\") | .title")
+          if [ -n "$open" ]; then echo "An issue is already open."; exit 0; fi
+          {
+            echo "The organiser's pages changed since docs/judging/sources.lock was recorded:"
+            echo
+            grep '^CHANGED' report.txt
+            echo
+            echo 'Run `python3 scripts/judging_criteria.py --show` (or ask an agent to use the hackathon-judge skill), update docs/judging/rubric.md if the criteria changed, and commit it with the refreshed sources.lock.'
+          } > body.md
+          gh issue create --title "$title" --body-file body.md
+      - name: Fail when the pages could not be fetched
+        if: steps.check.outputs.status == '2'
+        run: exit 1

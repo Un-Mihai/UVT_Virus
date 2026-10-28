@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. DESIGN.md (repo root) documents them; change both together.
+ * Tailwind's default palette is switched off below, so only these semantic
+ * colors exist: bg-surface, text-ink-2, border-line, bg-accent, text-bad...
+ */
+:root {
+  --surface: oklch(0.985 0.004 95);
+  --surface-2: oklch(0.962 0.006 95);
+  --ink: oklch(0.24 0.014 255);
+  --ink-2: oklch(0.43 0.014 255);
+  --ink-3: oklch(0.53 0.012 255);
+  --line: oklch(0.9 0.006 95);
+  --line-strong: oklch(0.8 0.008 95);
+  --accent: oklch(0.46 0.13 258);
+  --accent-hover: oklch(0.4 0.13 258);
+  --on-accent: oklch(0.985 0.004 95);
+  --ok: oklch(0.5 0.12 155);
+  --warn: oklch(0.56 0.12 70);
+  --bad: oklch(0.52 0.18 27);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: oklch(0.2 0.012 255);
+    --surface-2: oklch(0.24 0.013 255);
+    --ink: oklch(0.94 0.006 95);
+    --ink-2: oklch(0.78 0.01 255);
+    --ink-3: oklch(0.68 0.01 255);
+    --line: oklch(0.32 0.012 255);
+    --line-strong: oklch(0.42 0.012 255);
+    --accent: oklch(0.72 0.12 258);
+    --accent-hover: oklch(0.78 0.11 258);
+    --on-accent: oklch(0.2 0.012 255);
+    --ok: oklch(0.74 0.13 155);
+    --warn: oklch(0.8 0.12 75);
+    --bad: oklch(0.72 0.15 27);
+  }
+}
+
+@theme {
+  --color-*: initial;
+  --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+  /* taste-skill-ignore: only <code> uses mono (identifiers, URLs, model names) */
+  --font-mono: var(--font-atkinson-mono), ui-monospace, monospace;
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+
+  body {
+    background: var(--surface);
+    color: var(--ink);
+    caret-color: var(--accent);
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--accent) 24%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+  }
+}

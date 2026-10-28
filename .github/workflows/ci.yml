@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.7-pg17
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app_test
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pipx install poetry==2.5.1
+      - run: poetry install --no-root
+      - run: poetry run poe check
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Production images build from a clean clone
+        run: |
+          docker build --target prod --tag api:ci api
+          docker build --target prod --tag web:ci web
+          docker build --target prod --tag keycloak:ci infra/keycloak
+
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.17.0
+      - name: Skills valid and copies in sync
+        run: python3 scripts/sync_agents.py --check
+      - name: Scripts lint, format and types
+        run: |
+          pipx run ruff==0.17.2 check scripts
+          pipx run ruff==0.17.2 format --check scripts
+          pipx run mypy==2.4.0 --strict scripts/judging_criteria.py scripts/sync_agents.py
+      - name: UI anti-slop scan (source)
+        run: |
+          sh .agents/skills/impeccable/scripts/impeccable detect web/src
+          node .agents/skills/design-taste-frontend/scripts/lint.mjs web/src --app
+      - name: Terraform format, validate and offline tests
+        run: |
+          terraform -chdir=infra/terraform fmt -check -recursive
+          terraform -chdir=infra/terraform init -backend=false -input=false
+          terraform -chdir=infra/terraform validate
+          terraform -chdir=infra/terraform test

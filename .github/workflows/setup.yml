@@ -1,0 +1,25 @@
+name: Setup script
+
+# Runs scripts/setup.sh on a clean Linux machine whenever it changes.
+on:
+  push:
+    branches: [main]
+    paths: [scripts/setup.sh, .github/workflows/setup.yml]
+  pull_request:
+    paths: [scripts/setup.sh, .github/workflows/setup.yml]
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install tools, dependencies and start the stack
+        run: bash scripts/setup.sh
+      - name: Nothing left to install
+        run: bash scripts/setup.sh --check
+      - name: Sign-in works and the API accepts the token
+        run: >-
+          node scripts/signed_in.mjs http://localhost:3000
+          sh -c 'curl -fsS "$0" | grep -q Verified' http://localhost:3000/status

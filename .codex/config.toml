@@ -1,0 +1,9 @@
+# Codex reads this for trusted projects. Keep in sync with .mcp.json.
+
+[mcp_servers.next-devtools]
+command = "npx"
+args = ["-y", "next-devtools-mcp@0.4.0"]
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@0.0.83"]

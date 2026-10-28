@@ -1,0 +1,36 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.tfvars
+!*.tfvars.example
+*.tfstate
+*.tfstate.*
+
+# Terraform working files (the lock file is committed)
+.terraform/
+
+# Python
+__pycache__/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+coverage/
+
+# Impeccable's per-project cache and review captures
+.impeccable/cache/
+.impeccable/review/
+
+# OS and editors
+.DS_Store
+.idea/
+
+# Local caches (official page text for judging_criteria.py diffs)
+.cache/
