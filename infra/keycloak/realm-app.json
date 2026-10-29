@@ -1,6 +1,6 @@
 {
   "realm": "app",
-  "displayName": "Hackathon starter",
+  "displayName": "Login",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,
