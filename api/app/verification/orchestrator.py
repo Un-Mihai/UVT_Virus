@@ -10,6 +10,8 @@ from app.pdf import line_boxes, locate_words
 from app.verification.agents.base import VerificationAgent
 from app.verification.agents.compliance import RegulationComplianceAgent
 from app.verification.agents.extraction import FactExtractionAgent
+from app.verification.agents.form_checks import FormChecksAgent
+from app.verification.agents.required_documents import RequiredDocumentsAgent
 from app.verification.context import VerificationContext
 from app.verification.findings import FindingDraft, ResolvedFinding
 
@@ -18,30 +20,62 @@ class VerificationOrchestrator:
     """Stages run in order; the agents inside one stage run concurrently.
 
     Later stages read what earlier ones put in the context (extracted facts), so a new agent
-    goes into the stage after the data it needs.
+    goes into the stage after the data it needs. The `gate` agents run before everything: when
+    they report anything, only their findings are returned and no stage runs.
     """
 
-    def __init__(self, stages: Sequence[Sequence[VerificationAgent]]) -> None:
+    def __init__(
+        self,
+        stages: Sequence[Sequence[VerificationAgent]],
+        gate: Sequence[VerificationAgent] = (),
+    ) -> None:
         self.stages = stages
+        self.gate = gate
 
     async def run(self, context: VerificationContext) -> list[ResolvedFinding]:
         drafts: list[FindingDraft] = []
+        for agent in self.gate:
+            drafts += await agent.run(context)
+        if drafts:
+            return [_resolve(context, draft) for draft in drafts]
         for stage in self.stages:
             results = await asyncio.gather(*(agent.run(context) for agent in stage))
             drafts += [draft for result in results for draft in result]
-        return [_resolve(context, draft) for draft in drafts]
+        return [_resolve(context, draft) for draft in _unique_checks(drafts)]
 
 
 def default_orchestrator(ai: AIClient, settings: Settings) -> VerificationOrchestrator:
-    """Facts first, then the documents against the regulations (with the code checks the
-    model asks for). The same agents serve both scopes; the scope decides which regulations."""
+    """Completeness first (an incomplete file is reported and nothing else is checked), then
+    facts and the ticked boxes and dates read in code, then the documents against the
+    regulations (with the code checks the model asks for). The same agents serve both scopes;
+    the scope decides which regulations."""
     concurrency = settings.verification_concurrency
     return VerificationOrchestrator(
         [
-            [FactExtractionAgent(ai, concurrency)],
+            [FactExtractionAgent(ai, concurrency), FormChecksAgent()],
             [RegulationComplianceAgent(ai, concurrency, settings.compliance_context_chars)],
-        ]
+        ],
+        gate=[RequiredDocumentsAgent()],
     )
+
+
+def _unique_checks(drafts: list[FindingDraft]) -> list[FindingDraft]:
+    """A code check can run on its own and also be asked for by the model: one finding, the
+    copy that cites a regulation when there is one. Other findings are never merged."""
+    kept: dict[tuple[str, object], int] = {}
+    unique: list[FindingDraft] = []
+    for draft in drafts:
+        if draft.agent != "checks":
+            unique.append(draft)
+            continue
+        evidence = draft.evidence
+        key = (draft.rule_code, evidence and (evidence.document_id, evidence.page, evidence.quote))
+        if key not in kept:
+            kept[key] = len(unique)
+            unique.append(draft)
+        elif draft.regulation and not unique[kept[key]].regulation:
+            unique[kept[key]] = draft
+    return unique
 
 
 def _resolve(context: VerificationContext, draft: FindingDraft) -> ResolvedFinding:

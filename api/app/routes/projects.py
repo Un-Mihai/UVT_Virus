@@ -73,6 +73,10 @@ class DocumentOut(BaseModel):
     reading_stalled: bool
 
 
+class DocumentLinkIn(BaseModel):
+    required_document_id: int | None  # None: not for an item of the list
+
+
 class ProjectSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -175,10 +179,7 @@ async def upload_document(
     """Stores the PDF, for an item of the list of documents to add when `required_document_id`
     names one; scanned pages are then read by OCR in the background."""
     project = await editable_project(session, client, project_id)
-    if required_document_id is not None:
-        item = await session.get(RequiredDocument, required_document_id)
-        if item is None or item.project_id != project_id:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Required document not found.")
+    await _check_required_document(session, project_id, required_document_id)
     content = await file.read()
     pages = await read_upload(content, settings.max_upload_mb)
     document = await add_project_document(
@@ -236,6 +237,23 @@ async def read_scans_again(
         page.ocr_status, page.ocr_error, page.ocr_updated_at = OcrStatus.PENDING, None, now
     await session.commit()
     background.add_task(read_scanned_pages, sessions, ocr, settings, hasher, document.id)
+    return document_out(document)
+
+
+@router.patch("/{project_id}/documents/{document_id}")
+async def link_document(
+    project_id: int,
+    document_id: int,
+    body: DocumentLinkIn,
+    session: SessionDep,
+    client: Client,
+) -> DocumentOut:
+    """Says which item of the list of documents to add an uploaded document is for."""
+    await editable_project(session, client, project_id)
+    await _check_required_document(session, project_id, body.required_document_id)
+    document = await project_document(session, project_id, document_id, with_pages=True)
+    document.required_document_id = body.required_document_id
+    await session.commit()
     return document_out(document)
 
 
@@ -313,6 +331,17 @@ async def project_document(
     if document is None or document.project_id != project_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
     return document
+
+
+async def _check_required_document(
+    session: AsyncSession, project_id: int, item_id: int | None
+) -> None:
+    """404 unless `item_id` is None or an item of this project's list of documents to add."""
+    if item_id is None:
+        return
+    item = await session.get(RequiredDocument, item_id)
+    if item is None or item.project_id != project_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Required document not found.")
 
 
 def document_out(document: ProjectDocument) -> DocumentOut:

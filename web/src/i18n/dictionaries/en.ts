@@ -217,6 +217,8 @@ export const en = {
     remove: "Delete",
     removing: "Deleting…",
     removeConfirm: "Delete {name}?",
+    linkLabel: "Item on the list of documents to add",
+    linkNone: "None (outside the list)",
   },
   required: {
     title: "Documents to add",

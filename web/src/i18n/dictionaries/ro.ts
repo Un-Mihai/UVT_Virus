@@ -216,6 +216,8 @@ export const ro: Dictionary = {
     remove: "Ștergeți",
     removing: "Se șterge…",
     removeConfirm: "Ștergeți {name}?",
+    linkLabel: "Element din lista documentelor de adăugat",
+    linkNone: "Niciunul (în afara listei)",
   },
   required: {
     title: "Documente de adăugat",

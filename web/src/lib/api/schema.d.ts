@@ -422,7 +422,11 @@ export interface paths {
     delete: operations["delete_document_api_projects__project_id__documents__document_id__delete"];
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Link Document
+     * @description Says which item of the list of documents to add an uploaded document is for.
+     */
+    patch: operations["link_document_api_projects__project_id__documents__document_id__patch"];
     trace?: never;
   };
   "/api/projects/{project_id}/documents/{document_id}/file": {
@@ -790,6 +794,11 @@ export interface components {
       pages: components["schemas"]["PageSize"][];
       /** Findings */
       findings: components["schemas"]["FindingOut"][];
+    };
+    /** DocumentLinkIn */
+    DocumentLinkIn: {
+      /** Required Document Id */
+      required_document_id: number | null;
     };
     /** DocumentOut */
     DocumentOut: {
@@ -3253,6 +3262,105 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Content Too Large */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Unsupported Media Type */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  link_document_api_projects__project_id__documents__document_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: number;
+        document_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DocumentLinkIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DocumentOut"];
+        };
       };
       /** @description Bad Request */
       400: {

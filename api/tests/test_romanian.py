@@ -24,6 +24,13 @@ def test_validators_match_the_skill_reference() -> None:
     assert is_valid_cui("RO 361579")  # BRD - Groupe Société Générale
     assert not is_valid_cui("361821")
     assert not is_valid_cui("RO12A")
+    # A label and the prefix, as the page writes them, do not change the digits.
+    assert is_valid_cui("CUI 412764070")
+    assert is_valid_cui("C.U.I.: RO 412764070")
+    assert is_valid_cui("CIF RO361820")
+    assert is_valid_cui("Cod fiscal: 361820")
+    assert not is_valid_cui("CUI 412764071")
+    assert not is_valid_cui("1 7 2 0 8 2 3 2 2 8 7 4 7")  # 13 digits: a CNP, never a CUI
     assert is_valid_iban("RO49 AAAA 1B31 0075 9384 0000")  # IBAN registry example
     assert not is_valid_iban("RO49AAAA1B31007593840001")
     assert not is_valid_iban("RO49AAAA1B3100759384000")  # 23 chars

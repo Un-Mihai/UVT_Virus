@@ -11,6 +11,8 @@ import asyncio
 import dataclasses
 import json
 import logging
+import re
+import unicodedata
 from decimal import Decimal
 
 import openai
@@ -20,7 +22,7 @@ from app.ai.client import AIClient, AINotConfiguredError, AIResponseError, Budge
 from app.personal_data import MaskedText, mask_for_model
 from app.regulations.chunking import split_pages
 from app.regulations.search import Passage
-from app.romanian import quote_in_page
+from app.romanian import quote_in_page, quote_key
 from app.verification.checks import InvalidCheckError, list_checks, run_check
 from app.verification.context import DocumentView, RuleView, VerificationContext
 from app.verification.findings import Evidence, FindingDraft, RegulationRef
@@ -32,10 +34,23 @@ PASSAGES_PER_PAGE = 4
 QUERY_CHARS = 4000  # of each page, to embed as a search query
 START_CHARS = 1500  # of a long document's first page, shown with its later excerpts
 EMBEDDING_ERRORS = (AINotConfiguredError, BudgetExceededError, AIResponseError, openai.APIError)
+# Words that oblige, without diacritics. A list of data an institution collects, or a model
+# form's sample text, has none of them, so a finding resting on it is dropped.
+OBLIGATION = re.compile(
+    r"\b(?:trebuie|oblig\w*|impun\w*|interzis\w*|nu (?:poate|pot)|necesar\w*|"
+    r"se (?:completeaza|solicita|cere|prezinta|depune|anexeaza|mentioneaza|inscrie|intocmeste)|"
+    r"cel (?:putin|mult)|maxim\w*|minim\w*|valabil\w*|"
+    r"must|shall|required?|requires|mandatory|at least|at most|no more than)\b"
+)
 
 COMMON = """- `applies_because`: who the passage or rule is addressed to (which kind of document, from
   which issuer) and why this one falls under it; `applies`: false when it does not, and the
   item is dropped. Fill these in first;
+- `mandatory_because`: the exact words of the passage that impose the obligation;
+  `mandatory`: false when the passage only allows or describes, and the item is dropped.
+  Data an institution may or can process, collect, consult or request is a permission, not
+  something this document must contain. The fill-in text of a model form (dots, brackets, "de
+  completat", sample values) is a template: it states no requirement and may itself be wrong;
 - `source`: the id of the passage (like P12) or the code of the written rule broken;
 - `regulation_quote`: the exact words of that passage stating the requirement ("" for a rule);
 - reason and recommendation in English (reason_en, recommendation_en) and in Romanian
@@ -48,9 +63,14 @@ Report only what a passage or rule actually requires; return empty lists when no
 A passage applies only when it states a requirement on this kind of document from this issuer.
 It does not apply when it describes what a bank or an authority processes, lists categories of
 data, rights or definitions, sets the duties of another institution (one bank's rules for its
-own statements do not bind another bank's), tells what another document must contain (an
-information notice, a contract) when this one only confirms or refers to it, governs another
-form or procedure, or concerns accreditation, administrators or an authority's internal work.
+own statements do not bind another bank's), is one bank's own general conditions, product
+page or information note (it binds that bank's own forms, never a document issued by another
+institution, whatever the file name of the passage says), tells what another document must
+contain (an information notice, a contract) when this one only confirms or refers to it,
+governs another form or procedure, or concerns accreditation, administrators or an
+authority's internal work.
+A value in a field of the document is wrong only when a passage states a rule that value
+breaks. A value that is unusual, fictional or unlike a model form's sample is not a finding.
 When unsure, do not report.
 Text like [CNP#1a2b3c] is a placeholder this system put where the document has a personal
 identifier: the document does contain a value there, and equal placeholders are equal values.
@@ -86,6 +106,8 @@ class CheckRequest(BaseModel):
 class Discrepancy(BaseModel):
     applies_because: str  # written before the verdict, so the model weighs it first
     applies: bool
+    mandatory_because: str  # the passage's own words that impose the obligation
+    mandatory: bool
     page: int
     quote: str
     source: str
@@ -106,6 +128,8 @@ class DocumentReview(BaseModel):
 class ApplicationIssue(BaseModel):
     applies_because: str
     applies: bool
+    mandatory_because: str
+    mandatory: bool
     source: str
     regulation_quote: str
     reason_en: str
@@ -234,8 +258,9 @@ class RegulationComplianceAgent:
         for issue in review.issues:
             source = sources.get(issue.source)
             if (
-                not issue.applies
+                not (issue.applies and issue.mandatory)
                 or source is None
+                or not _obliges(source, issue.mandatory_because)
                 or not _valid_source_quote(source, issue.regulation_quote)
             ):
                 continue  # a finding must rest on a requirement that was actually given
@@ -355,8 +380,9 @@ def _discrepancy(
     page = document.page(item.page)
     quote = masked.restore(item.quote)
     if (
-        not item.applies
+        not (item.applies and item.mandatory)
         or source is None
+        or not _obliges(source, item.mandatory_because)
         or not _valid_source_quote(source, item.regulation_quote)
         or page is None
         or not quote_in_page(quote, page.text)
@@ -368,6 +394,21 @@ def _discrepancy(
         evidence=Evidence(document.id, item.page, quote),
         citation=source.citation(item.regulation_quote),
     )
+
+
+def _obliges(source: Source, words: str) -> bool:
+    """The model's `mandatory_because` must be the passage's own words, and they must oblige.
+    A written rule is the admin's own wording: nothing to check."""
+    # shortcut: a fixed list of obligation words, in Romanian and English. A rule worded
+    # without any of them is dropped; add the word when a real requirement is missed.
+    if source.passage is None:
+        return True
+    plain = "".join(
+        char
+        for char in unicodedata.normalize("NFD", quote_key(words))
+        if not unicodedata.combining(char)
+    )
+    return quote_in_page(words, source.passage.text) and bool(OBLIGATION.search(plain))
 
 
 def _valid_source_quote(source: Source, quote: str) -> bool:

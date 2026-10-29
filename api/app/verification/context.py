@@ -16,6 +16,7 @@ from app.models import (
     ProjectDocument,
     RegulationDocument,
     RegulationRule,
+    RequiredDocument,
 )
 from app.pdf import Word
 from app.personal_data import IdentifierHasher
@@ -62,6 +63,14 @@ class IdentifierView:
 
 
 @dataclass(frozen=True)
+class RequiredDocumentView:
+    """An item of the project's list of documents to add, and whether one was uploaded for it."""
+
+    name: str
+    has_document: bool
+
+
+@dataclass(frozen=True)
 class RuleView:
     """A requirement findings are reported against: an admin's written rule, or the code
     check the model asked for on behalf of a regulation passage."""
@@ -84,6 +93,7 @@ class VerificationContext:
     passages: PassageSearch  # the regulation passages that apply, searchable
     hasher: IdentifierHasher
     notes: dict[str, Any] = field(default_factory=dict)  # free space for agents in later stages
+    required_documents: list[RequiredDocumentView] = field(default_factory=list)
 
     def document(self, document_id: int) -> DocumentView | None:
         return next((doc for doc in self.documents if doc.id == document_id), None)
@@ -124,6 +134,12 @@ async def load_context(
         .where(PersonalIdentifier.project_id == project_id)
         .order_by(PersonalIdentifier.id)
     )
+    required = await session.scalars(
+        select(RequiredDocument)
+        .where(RequiredDocument.project_id == project_id)
+        .order_by(RequiredDocument.id)
+    )
+    uploaded_for = {document.required_document_id for document in project.documents}
     return VerificationContext(
         project_id=project.id,
         project_title=project.title,
@@ -149,6 +165,9 @@ async def load_context(
         ],
         passages=PgvectorPassageSearch(sessions, list(regulation_ids), embedding_model),
         hasher=hasher,
+        required_documents=[
+            RequiredDocumentView(item.name, item.id in uploaded_for) for item in required
+        ],
     )
 
 

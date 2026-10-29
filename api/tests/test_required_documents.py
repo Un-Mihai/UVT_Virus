@@ -5,7 +5,14 @@ from typing import Any
 from fastapi.testclient import TestClient
 
 from tests.conftest import FakeProvider, MakeClient, as_user, prompt_of, run_sql
-from tests.flows import add_regulation, add_rule, create_project, create_project_type, upload
+from tests.flows import (
+    add_regulation,
+    add_rule,
+    create_project,
+    create_project_type,
+    upload,
+    verify,
+)
 from tests.pdf_factory import make_pdf
 
 GUIDE = [
@@ -206,3 +213,115 @@ def test_without_a_provider_the_list_stays_empty_and_an_admin_is_told(
     again = client.post(f"/api/projects/{project_id}/required-documents/from-regulations")
     assert again.status_code == 503
     assert "AI_PROVIDER" in again.json()["detail"]
+
+
+def test_an_uploaded_document_can_be_linked_to_an_item_later(make_client: MakeClient) -> None:
+    client = make_client()
+    type_id = create_project_type(client)
+    project_id, other_id = create_project(client, type_id), create_project(client, type_id)
+    as_user(client, "admin")
+    item = client.post(f"/api/projects/{project_id}/required-documents", json={"name": "A"}).json()
+    foreign = client.post(f"/api/projects/{other_id}/required-documents", json={"name": "B"}).json()
+    document_id = upload(client, project_id, "a.pdf", ["A"])  # outside the list
+    url = f"/api/projects/{project_id}/documents/{document_id}"
+
+    as_user(client, "client")
+    linked = client.patch(url, json={"required_document_id": item["id"]})
+    for wrong in (foreign["id"], 999):
+        assert client.patch(url, json={"required_document_id": wrong}).status_code == 404
+    assert (
+        client.get(f"/api/projects/{project_id}").json()["documents"][0]["required_document_id"]
+        == item["id"]
+    ), "a refused link changes nothing"
+    unlinked = client.patch(url, json={"required_document_id": None})
+
+    assert linked.json()["required_document_id"] == item["id"]
+    assert unlinked.json()["required_document_id"] is None
+    for user, refused in (("client-2", 404), ("reviewer", 403)):
+        as_user(client, user)  # not the owner; reviewers never change a file
+        assert client.patch(url, json={"required_document_id": None}).status_code == refused
+    as_user(client, "client")
+    client.post(f"/api/projects/{project_id}/submit")
+    assert client.patch(url, json={"required_document_id": item["id"]}).status_code == 409
+
+
+NO_FACTS = json.dumps(
+    {"document_type": None, "parties": [], "ibans": [], "amounts": [], "dates": []}
+)
+MISSING = "completeness.required_document_missing"
+
+
+def two_item_project(client: TestClient) -> tuple[int, list[dict[str, Any]]]:
+    """A project whose list asks for a "Cerere" and an "Extras de cont", nothing uploaded."""
+    project_id = create_project(client, create_project_type(client))
+    as_user(client, "admin")
+    url = f"/api/projects/{project_id}/required-documents"
+    return project_id, [
+        client.post(url, json={"name": name}).json() for name in ("Cerere", "Extras de cont")
+    ]
+
+
+def upload_for(client: TestClient, project_id: int, item: dict[str, Any], name: str) -> None:
+    as_user(client, "client")
+    response = client.post(
+        f"/api/projects/{project_id}/documents",
+        params={"required_document_id": item["id"]},
+        files={"file": (name, make_pdf([name]), "application/pdf")},
+    )
+    assert response.status_code == 201, response.text
+
+
+def test_a_file_missing_a_required_document_gets_only_that_error(make_client: MakeClient) -> None:
+    provider = FakeProvider(answers={"PageFacts": NO_FACTS})
+    client = make_client(provider)
+    project_id, (cerere, extras) = two_item_project(client)
+    upload_for(client, project_id, cerere, "cerere.pdf")
+
+    [finding] = verify(client, project_id)["findings"]
+
+    assert finding["rule_code"] == MISSING
+    assert "Extras de cont" in finding["reason"]["en"]
+    assert "Extras de cont" in finding["reason"]["ro"]
+    assert (finding["document_id"], finding["confidence"], finding["severity"]) == (
+        None,
+        1.0,
+        "bad",
+    )
+    assert [body for body in provider.bodies if "messages" in body] == [], "nothing was read"
+
+    upload_for(client, project_id, extras, "extras.pdf")
+    complete = verify(client, project_id)
+
+    assert complete["findings"] == []
+    assert len(provider.schema_requests("PageFacts")) == 2, "now both documents are checked"
+
+
+def test_a_document_uploaded_outside_the_list_does_not_complete_it(make_client: MakeClient) -> None:
+    client = make_client(FakeProvider(answers={"PageFacts": NO_FACTS}))
+    project_id, (cerere, extras) = two_item_project(client)
+    upload_for(client, project_id, cerere, "cerere.pdf")
+    upload(client, project_id, "extras.pdf", ["Extras"])  # no item given
+
+    assert [f["rule_code"] for f in verify(client, project_id)["findings"]] == [MISSING]
+    unlinked = client.get(f"/api/projects/{project_id}").json()["documents"][1]["id"]
+    client.patch(
+        f"/api/projects/{project_id}/documents/{unlinked}",
+        json={"required_document_id": extras["id"]},
+    )
+    assert verify(client, project_id)["findings"] == []
+
+
+def test_the_reviewer_gets_the_same_error_on_an_incomplete_submission(
+    make_client: MakeClient,
+) -> None:
+    provider = FakeProvider(answers={"PageFacts": NO_FACTS})
+    client = make_client(provider)
+    project_id, (cerere, _) = two_item_project(client)
+    upload_for(client, project_id, cerere, "cerere.pdf")
+    client.post(f"/api/projects/{project_id}/submit")
+
+    as_user(client, "reviewer")
+    [finding] = verify(client, project_id)["findings"]
+
+    assert finding["rule_code"] == MISSING
+    assert [body for body in provider.bodies if "messages" in body] == []

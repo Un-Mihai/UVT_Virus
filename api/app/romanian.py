@@ -14,8 +14,14 @@ CNP_KEY = "279146358279"
 
 
 def is_valid_cui(value: str) -> bool:
-    """Romanian CUI/CIF: optional RO prefix, 2-10 digits, last digit is the check digit."""
-    digits = re.sub(r"^RO", "", value.strip().upper().replace(" ", ""))
+    """Romanian CUI/CIF by the ANAF formula: 2-10 digits, the last one is the check digit.
+
+    The value is taken as written on the page, so a label ("CUI", "C.I.F.", "cod fiscal") and the
+    "RO" prefix are dropped first. The other digits, padded to nine on the left, are multiplied by
+    753217532 and summed; the sum times 10 modulo 11 is the check digit, 10 counting as 0.
+    """
+    text = re.sub(r"[\s.:/-]", "", value.upper())
+    digits = re.sub(r"^(?:CUI|CIF|CODFISCAL|CF)?(?:RO)?", "", text)
     if not re.fullmatch(r"\d{2,10}", digits):
         return False
     body, check = digits[:-1].zfill(9), int(digits[-1])

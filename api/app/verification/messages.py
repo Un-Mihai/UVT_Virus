@@ -124,6 +124,108 @@ MESSAGES: dict[str, dict[str, tuple[str, str]]] = {
             "Încărcați documentul cerut de regulament: {document_type}.",
         ),
     },
+    "required_document_missing": {
+        "en": (
+            "The required document “{document}” has not been added to the application, so no"
+            " document was checked.",
+            "Add it to the application (see “Documents to add”), then run the check again.",
+        ),
+        "ro": (
+            "Documentul cerut „{document}” nu a fost adăugat în cerere, deci niciun document nu a"
+            " fost verificat.",
+            "Adăugați-l în cerere (vezi „Documente de adăugat”), apoi rulați din nou verificarea.",
+        ),
+    },
+    "form_marks": {
+        "en": (
+            "{document}: two options that exclude each other are both ticked (“{first}” and"
+            " “{second}”), so the form contradicts itself.",
+            "Ask the applicant to tick one option only and sign the corrected form.",
+        ),
+        "ro": (
+            "{document}: sunt bifate două opțiuni care se exclud („{first}” și „{second}”),"
+            " deci formularul se contrazice singur.",
+            "Cereți solicitantului să bifeze o singură opțiune și să semneze formularul corectat.",
+        ),
+    },
+    "form_refused": {
+        "en": (
+            "In {document} the applicant ticked NO: the consent is refused, so what it covers"
+            " cannot be done.",
+            "Ask the applicant for a signed consent (YES), or record that this consultation"
+            " cannot be made.",
+        ),
+        "ro": (
+            "În {document} solicitantul a bifat NU: acordul este refuzat, deci ceea ce acoperă"
+            " el nu se poate face.",
+            "Cereți solicitantului un acord semnat (DA) sau consemnați că această consultare nu"
+            " se poate face.",
+        ),
+    },
+    "form_incomplete": {
+        "en": (
+            "In {document} the consent does not cover “{item}”: the other items are ticked, this"
+            " one is not.",
+            "Ask the applicant to tick every item the consent must cover, then sign again.",
+        ),
+        "ro": (
+            "În {document} acordul nu acoperă „{item}”: celelalte puncte sunt bifate, acesta nu.",
+            "Cereți solicitantului să bifeze toate punctele pe care acordul trebuie să le"
+            " acopere și să semneze din nou.",
+        ),
+    },
+    "form_expired": {
+        "en": (
+            "The income certificate in {document} was issued on {issued}, {age} before the"
+            " application of {applied}, but it is valid for {valid}.",
+            "Ask the applicant for a certificate issued no more than {valid} before the"
+            " application.",
+        ),
+        "ro": (
+            "Adeverința de venit din {document} a fost emisă la {issued}, cu {age}"
+            " înaintea cererii din {applied}, dar este valabilă {valid}.",
+            "Cereți solicitantului o adeverință emisă cu cel mult {valid} înaintea cererii.",
+        ),
+    },
+    "form_id_expired": {
+        "en": (
+            "The identity card in {document} expired on {expiry}, before the application of"
+            " {applied}.",
+            "Ask the applicant for a valid identity document and correct the application.",
+        ),
+        "ro": (
+            "Cartea de identitate din {document} a expirat la {expiry}, înaintea cererii din"
+            " {applied}.",
+            "Cereți solicitantului un act de identitate valabil și corectați cererea.",
+        ),
+    },
+    "form_installments": {
+        "en": (
+            "The application declares {declared} RON in existing monthly instalments, but"
+            " {document} shows monthly instalments of {found} RON paid to {creditor}.",
+            "Ask the applicant to declare every existing loan with its instalment, or to"
+            " explain the payments.",
+        ),
+        "ro": (
+            "Cererea declară rate lunare existente de {declared} lei, dar {document} arată rate"
+            " lunare de {found} lei plătite către {creditor}.",
+            "Cereți solicitantului să declare toate creditele existente, cu rata lor, sau să"
+            " explice plățile.",
+        ),
+    },
+    "form_income": {
+        "en": (
+            "The ANAF income certificate in {document} shows a net income of about {anaf} RON a"
+            " month (over {months} months), well below the {declared} RON a month declared in"
+            " the application.",
+            "Ask the applicant to explain the difference or to correct the declared income.",
+        ),
+        "ro": (
+            "Adeverința de venit ANAF din {document} arată un venit net de aproximativ {anaf} lei"
+            " pe lună (pe {months} luni), mult sub cei {declared} lei pe lună declarați în cerere.",
+            "Cereți solicitantului să explice diferența sau să corecteze venitul declarat.",
+        ),
+    },
     "page_unreadable": {
         "en": (
             "Page {page} of {document} could not be read, even with OCR, so it was not checked.",

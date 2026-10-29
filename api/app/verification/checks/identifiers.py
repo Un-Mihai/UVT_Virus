@@ -1,8 +1,16 @@
+import re
+
 from app.romanian import is_valid_cui, is_valid_iban
 from app.verification.checks.common import finding
 from app.verification.checks.registry import NoParams, register_check
 from app.verification.context import RuleView, VerificationContext
 from app.verification.findings import Evidence, FindingDraft
+
+
+def _is_cnp_shaped(value: str) -> bool:
+    """13 digits, spaced or not, is a personal numeric code (the personal-data checks cover it);
+    a CUI has at most 10."""
+    return len(re.sub(r"\D", "", value)) == 13
 
 
 @register_check(
@@ -24,7 +32,7 @@ def cui_valid(context: VerificationContext, rule: RuleView, _: NoParams) -> list
         )
         for document, page, facts in context.page_facts()
         for party in facts.parties
-        if party.cui and not is_valid_cui(party.cui)
+        if party.cui and not _is_cnp_shaped(party.cui) and not is_valid_cui(party.cui)
     ]
 
 

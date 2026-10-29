@@ -6,9 +6,11 @@ import { fill, plural } from "@/i18n/template";
 import type { components } from "@/lib/api/schema";
 
 import { DocumentActions } from "./document-actions";
+import { DocumentLink } from "./document-link";
 import { DocumentUpload } from "./document-upload";
 
 type Document = components["schemas"]["DocumentOut"];
+type Item = components["schemas"]["RequiredDocumentOut"];
 
 /** How OCR is doing on a document's scanned pages, as one state and one sentence. */
 function readingState(
@@ -64,6 +66,7 @@ function checkState(
 export function DocumentsSection({
   projectId,
   documents,
+  items,
   checks,
   checking,
   editable,
@@ -72,6 +75,8 @@ export function DocumentsSection({
 }: {
   projectId: number;
   documents: Document[];
+  /** The list of documents to add; an uploaded document can be tied to one of its items. */
+  items: Item[];
   /** Findings per document id from the latest finished check; null before one has finished. */
   checks: Record<number, { total: number; open: number }> | null;
   checking: boolean;
@@ -130,6 +135,17 @@ export function DocumentsSection({
                     )}
                     <StatusWord state={check.state}>{check.label}</StatusWord>
                   </p>
+                  {editable && items.length > 0 && (
+                    <DocumentLink
+                      projectId={projectId}
+                      documentId={document.id}
+                      current={document.required_document_id}
+                      items={items}
+                      locale={locale}
+                      text={text}
+                      errors={dictionary.errors}
+                    />
+                  )}
                 </div>
                 <DocumentActions
                   projectId={projectId}

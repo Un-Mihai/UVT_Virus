@@ -110,6 +110,13 @@ export async function Workspace({
   const typeName =
     types.find((type) => type.id === project.project_type_id)?.name ?? "";
   const completed = run?.status === "completed" ? report : null;
+  // A file missing a required document is reported and nothing else is checked, so its
+  // documents must not read as checked (the rule code is the API's, completeness agent).
+  const incomplete =
+    completed?.findings.some(
+      (finding) =>
+        finding.rule_code === "completeness.required_document_missing",
+    ) ?? false;
   const file = fileState(project);
   const applicant = applicantOf(project, dictionary.common.unnamedApplicant);
   const status = dictionary.fileState[file.key];
@@ -187,7 +194,10 @@ export async function Workspace({
       <DocumentsSection
         projectId={project.id}
         documents={project.documents}
-        checks={completed ? countFindings(completed.findings) : null}
+        items={required}
+        checks={
+          completed && !incomplete ? countFindings(completed.findings) : null
+        }
         checking={running}
         editable={isOwner && draft}
         locale={locale}

@@ -59,6 +59,24 @@ page, and the checks that matter (sums, dates, identifiers) are computed in code
 - Decided: requirements come only from uploaded regulation PDFs or admin requirements written in
   natural language. The LLM derives applicable requirements dynamically during verification;
   executable checks are tools it may request when a supplied requirement needs calculation.
+- Decided: one exception to the line above, the forms agent
+  (`api/app/verification/agents/form_checks.py`): on every verification, in both scopes, it reads
+  the boxes and dates of every page in code, with no model call and no regulation needed, and
+  reports (certain, severity bad) two neighbouring options both ticked, a consent answered "NU"
+  (`☐ DA ☒ NU sunt de acord`), a consent list ticked in part (F5 with a letter left out), and an
+  income certificate older than the validity it states for itself (compared with the date of the
+  credit application), an identity card whose "Valabil până la" is before that date, and monthly
+  loan instalments paid in a statement that the application's "Total rate lunare existente
+  declarate" does not cover, and an ANAF certificate whose monthly net income is under 80% of the
+  net average the application declares. The CNP check digit runs every time too. A model skims
+  these; code does not.
+- Decided: a regulation passage that only allows something (data an institution may process,
+  collect or request) or is the fill-in text of a model form is not a requirement. The model must
+  quote the passage's own words that oblige; code drops the finding when they are not verbatim or
+  contain no word of obligation.
+- Decided: a regulation passage from one bank's own documents (its general conditions, product
+  page, information note) is not applied to a document issued by another institution; the
+  compliance prompt says so. Removing such PDFs from the admin list is the hard way to the same.
 - Decided: regulation PDFs may apply globally, to a project type, or to one project. A project
   inherits all three levels within its verification scope (`client` or `reviewer`). Project-only
   requirements come from its PDFs; admin-written requirements apply globally or to a type.
@@ -97,11 +115,13 @@ page, and the checks that matter (sums, dates, identifiers) are computed in code
   until it is resubmitted.
 - Decided: each project has a list of documents to add, shown to its applicant (and to the
   reviewer) with what was uploaded for each item (`GET /api/projects/{id}/required-documents`; an
-  upload names its item with `required_document_id`). By default it is read from the client-scope
+  upload names its item with `required_document_id`, and the owner can tie a document
+  already uploaded to an item, or untie it, with `PATCH /api/projects/{id}/documents/{doc}`). By default it is read from the client-scope
   regulations that apply to the project, each item with the regulation and page that require it
   (a background job when the project is created, or an admin reading again); an admin can add,
   edit and delete items, and an edited item survives a new reading. The list does not block
-  submitting, and verification does not use it yet.
+  submitting, but a verification of a project with an item that has no document reports only
+  that (one finding per missing item, in both scopes) and checks no document.
 - Open decision: which document types and which checks the demo covers. The deterministic checks
   available to rule sets are listed at `GET /api/checks`.
 - Open decision: whether reviewers can correct an extracted value and re-run the checks.

@@ -82,7 +82,7 @@ REGULATIONS = {
     "cui": "Art. 1 The CUI of the beneficiary must be valid.",
     "guarantee": "Art. 2 The performance guarantee is at least 10% of the contract value.",
     "sums": "Art. 7 The budget subtotal equals the sum of its lines.",
-    "call": "Call 12: every application includes a guarantee letter.",
+    "call": "Call 12: every application must include a guarantee letter.",
     "other": "SECRET RULE OF ANOTHER PROJECT",
     "audit": "Audit 3: the performance guarantee is at least 10% of the contract.",
 }
@@ -94,10 +94,17 @@ def label(prompt: str, key: str) -> str | None:
     return match.group(1) if match else None
 
 
-def reason(text: str, applies: bool = True) -> dict[str, Any]:
+def reason(
+    text: str,
+    applies: bool = True,
+    mandatory: bool = True,
+    because: str = "the performance guarantee is at least 10%",
+) -> dict[str, Any]:
     return {
         "applies_because": "Addressed to this kind of document.",
         "applies": applies,
+        "mandatory_because": because,
+        "mandatory": mandatory,
         "reason_en": text,
         "reason_ro": f"(ro) {text}",
         "recommendation_en": "Fix it.",
@@ -129,7 +136,8 @@ def document_review(body: dict[str, Any]) -> str:
                 "confidence": 0.7,
             },
             # None of these may become a finding: invented quote, unknown source, and a valid
-            # quote on a passage the model itself says is not addressed to this document.
+            # quote on a passage the model itself says is not addressed to this document, or
+            # only permits and does not oblige.
             found | {"quote": "Garantia este de 20%", "regulation_quote": "", "confidence": 0.95},
             found
             | {
@@ -140,6 +148,21 @@ def document_review(body: dict[str, Any]) -> str:
             },
             found
             | reason("Another kind of document.", applies=False)
+            | {
+                "quote": GUARANTEE_QUOTE,
+                "regulation_quote": "the performance guarantee is at least 10%",
+                "confidence": 1,
+            },
+            found
+            | reason("The passage only allows it.", mandatory=False)
+            | {
+                "quote": GUARANTEE_QUOTE,
+                "regulation_quote": "the performance guarantee is at least 10%",
+                "confidence": 1,
+            },
+            # "Mandatory", but the words are not the passage's own: a paraphrase proves nothing.
+            found
+            | reason("Paraphrased obligation.", because="The guarantee has to be bigger.")
             | {
                 "quote": GUARANTEE_QUOTE,
                 "regulation_quote": "the performance guarantee is at least 10%",
@@ -163,16 +186,16 @@ def application_review(body: dict[str, Any]) -> str:
         issues.append(
             {
                 "source": call,
-                "regulation_quote": "every application includes a guarantee letter",
+                "regulation_quote": "every application must include a guarantee letter",
                 "severity": "bad",
                 "confidence": 0.9,
             }
-            | reason("No guarantee letter.")
+            | reason("No guarantee letter.", because="every application must include")
         )
         issues.append(
             {
                 "source": call,
-                "regulation_quote": "every application includes a guarantee letter",
+                "regulation_quote": "every application must include a guarantee letter",
                 "severity": "bad",
                 "confidence": 0.9,
             }
@@ -246,7 +269,7 @@ def test_documents_are_checked_against_the_regulations_that_apply(make_client: M
     assert client.get(cited).content.startswith(b"%PDF-")
     call = by_rule["call.pdf p.1"]
     assert (call["document_id"], call["regulation"]["filename"]) == (None, "call.pdf")
-    assert call["regulation"]["quote"] == "every application includes a guarantee letter"
+    assert call["regulation"]["quote"] == "every application must include a guarantee letter"
     assert by_rule["W-SIGN"]["regulation"] is None
     assert by_rule["W-SIGN"]["reason"] == {
         "en": "Contract not signed.",
