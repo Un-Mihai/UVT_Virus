@@ -263,8 +263,8 @@ for tool in node terraform az poetry; do
 done
 
 if [ ! -f .env ]; then
-  cp .env.example .env
-  note "created .env from .env.example: add an AI key (docs/ai-providers.md)"
+  : > .env
+  note "created an empty .env: add an AI key (docs/ai-providers.md)"
 fi
 
 # npm writes node_modules/.package-lock.json on install; skip when the lock file has not changed.
